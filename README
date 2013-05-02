@@ -3,4 +3,4 @@ This is a Jenkins Plug-in which
 
 2> picks up Task details [status, actual hrs, todo hrs etc] from scm comments (if provided) and updates rally task details accordingly
 
-3> This plugin saves efforts of writing check-in hooks for svn, cvs, perforce etc which is difficult if organisation uses more than one config management tool
+3> This plugin saves developer efforts of writing check-in hooks for SCM tools (svn, cvs, perforce etc) inorder to update rally changsets which is difficult if organisation uses more than one config management tool
