@@ -146,7 +146,9 @@ public class RallyConnector {
 			}
 			if(!rdto.getTaskActuals().isEmpty()) {
 				Double actuals = Double.parseDouble(rdto.getTaskActuals());
-				actuals = actuals + taskRef.get("Actuals").getAsDouble();
+				try {
+					actuals = actuals + taskRef.get("Actuals").getAsDouble();
+				} catch(Exception e) {}	
 				updateTask.addProperty("Actuals", String.valueOf(actuals));
 			}
 			if(!rdto.getTaskEstimates().isEmpty()) {
