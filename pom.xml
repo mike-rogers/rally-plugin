@@ -28,12 +28,6 @@
       </license>
     </licenses>
 
-    <scm>
-   		<connection>scm:git:ssh://github.com/jenkinsci/rally-update-plugin-1.git</connection>
-    	<developerConnection>scm:git:ssh://tushar686@github.com/jenkinsci/rally-update-plugin-1.git</developerConnection>
-    	<url>https://github.com/jenkinsci/rally-update-plugin-1</url>    
-    </scm>
-    
     <dependencies>
 		<dependency>
 			<groupId>com.rallydev.rest</groupId>
