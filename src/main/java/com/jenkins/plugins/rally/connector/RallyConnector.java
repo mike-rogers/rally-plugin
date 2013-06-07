@@ -5,6 +5,8 @@ import java.io.PrintStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 
+import org.apache.commons.lang.StringUtils;
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -32,6 +34,7 @@ public class RallyConnector {
 	public static final String RALLY_URL = "https://rally1.rallydev.com";
 	public static final String APPLICATION_NAME = "RallyConnect";
 	public static final String WSAPI_VERSION = "1.40";
+	private String DEFAULT_REPO_NAME_CREATED_BY_PLUGIN = "plugin_repo";
 	
 	public RallyConnector(final String userName, final String password, final String workspace, final String project, final String scmuri, final String scmRepoName) throws URISyntaxException {
 		this.userName = userName;
@@ -180,11 +183,87 @@ public class RallyConnector {
         QueryRequest scmRequest = new QueryRequest("SCMRepository");
         scmRequest.setFetch(new Fetch("ObjectID","Name","SCMType"));
         scmRequest.setWorkspace(workspace);
-        scmRequest.setQueryFilter(new QueryFilter("Name", "=", scmRepoName));
+       	scmRequest.setQueryFilter(new QueryFilter("Name", "=", getSCMRepoName(rdto, scmRepoName)));        
         QueryResponse scmQueryResponse = restApi.query(scmRequest);
         printWarnningsOrErrors(scmQueryResponse, rdto, "createSCMRef");
         JsonObject scmJsonObject = scmQueryResponse.getResults().get(0).getAsJsonObject();        
         return scmJsonObject;
+	}
+	
+	private String getSCMRepoName(RallyDetailsDTO rdto, String scmRepoName) throws IOException {
+		if(StringUtils.isNotBlank(scmRepoName)  && isProvidedScmRepoNameExist(rdto, scmRepoName))
+			return scmRepoName;
+		
+		String anyOtherRepoName = getAnyOtherRepoName(rdto);
+        if(!StringUtils.isBlank(anyOtherRepoName)) 
+        	return anyOtherRepoName;       	
+        
+        if(isDefaultPluginRepoNameExist(rdto))
+        	return DEFAULT_REPO_NAME_CREATED_BY_PLUGIN;
+        
+        return createDefaultPluginSCMReposirotyName(rdto);
+	}
+
+	private Boolean isProvidedScmRepoNameExist(RallyDetailsDTO rdto, String scmRepoName) throws IOException {
+		QueryRequest scmRequest = new QueryRequest("SCMRepository");
+        scmRequest.setFetch(new Fetch("ObjectID","Name","Name"));
+        scmRequest.setQueryFilter(new QueryFilter("Name", "=", scmRepoName));
+        scmRequest.setWorkspace(workspace);
+        String providedRepoName = "";
+        try {
+        	QueryResponse scmQueryResponse = restApi.query(scmRequest);
+        	printWarnningsOrErrors(scmQueryResponse, rdto, "isProvidedScmRepoNameExist");
+        	JsonObject scmJsonObject = scmQueryResponse.getResults().get(0).getAsJsonObject();        
+    		providedRepoName = scmJsonObject.get("_refObjectName").getAsString();
+		} catch (Exception e) {
+		}
+		return StringUtils.isNotBlank(providedRepoName);
+	}
+	
+	private String getAnyOtherRepoName(RallyDetailsDTO rdto) throws IOException {
+		QueryRequest scmRequest = new QueryRequest("SCMRepository");
+        scmRequest.setFetch(new Fetch("ObjectID","Name","Name"));        
+        scmRequest.setWorkspace(workspace);
+        String anyOtherRepoName = "";
+        try {
+        	QueryResponse scmQueryResponse = restApi.query(scmRequest);
+        	printWarnningsOrErrors(scmQueryResponse, rdto, "getAnyOtherRepoName");
+        	JsonObject scmJsonObject = scmQueryResponse.getResults().get(0).getAsJsonObject();        
+    		anyOtherRepoName = scmJsonObject.get("_refObjectName").getAsString();
+		} catch (Exception e) {
+		}
+		return anyOtherRepoName;
+	}
+	
+	private boolean isDefaultPluginRepoNameExist(RallyDetailsDTO rdto) throws IOException {
+		QueryRequest scmRequest = new QueryRequest("SCMRepository");
+        scmRequest.setFetch(new Fetch("ObjectID","Name","Name"));
+        scmRequest.setQueryFilter(new QueryFilter("Name", "=", DEFAULT_REPO_NAME_CREATED_BY_PLUGIN));
+        scmRequest.setWorkspace(workspace);
+        String defaultPluginRepoName = "";
+        try {
+            QueryResponse scmQueryResponse = restApi.query(scmRequest);
+            printWarnningsOrErrors(scmQueryResponse, rdto, "isDefaultPluginRepoNameExist");
+            JsonObject scmJsonObject = scmQueryResponse.getResults().get(0).getAsJsonObject();        
+            defaultPluginRepoName = scmJsonObject.get("_refObjectName").getAsString();
+		} catch (Exception e) {
+		}
+		return StringUtils.isNotBlank(defaultPluginRepoName);
+	}
+	
+	private String createDefaultPluginSCMReposirotyName(RallyDetailsDTO rdto) throws IOException {
+		JsonObject newSCMRepository = new JsonObject();
+        newSCMRepository.addProperty("Description", "This repository name is created by rally update plugin");        
+        
+		newSCMRepository.addProperty("Name", DEFAULT_REPO_NAME_CREATED_BY_PLUGIN);
+        newSCMRepository.addProperty("SCMType", "GIT");
+        if(!StringUtils.isBlank(scmuri))
+        	newSCMRepository.addProperty("Uri", scmuri);
+        CreateRequest createRequest = new CreateRequest("SCMRepository", newSCMRepository);
+        System.out.println(createRequest.getBody());
+        CreateResponse createResponse = restApi.create(createRequest);
+        printWarnningsOrErrors(createResponse, rdto, "createDefaultPluginSCMReposirotyName");
+        return DEFAULT_REPO_NAME_CREATED_BY_PLUGIN;
 	}
 
 	private JsonObject createUserRef(RallyDetailsDTO rdto) throws IOException {
