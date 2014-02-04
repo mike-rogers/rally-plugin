@@ -33,7 +33,7 @@ public class RallyConnector {
 	
 	public static final String RALLY_URL = "https://rally1.rallydev.com";
 	public static final String APPLICATION_NAME = "RallyConnect";
-	public static final String WSAPI_VERSION = "1.40";
+	public static final String WSAPI_VERSION = "v2.0";
 	private String DEFAULT_REPO_NAME_CREATED_BY_PLUGIN = "plugin_repo";
 	
 	public RallyConnector(final String userName, final String password, final String workspace, final String project, final String scmuri, final String scmRepoName) throws URISyntaxException {
@@ -64,16 +64,15 @@ public class RallyConnector {
 	    	JsonObject newChange = createChange(csRef, rdto.getFileNameAndTypes()[i][0], rdto.getFileNameAndTypes()[i][1]);	    
 	    	CreateRequest cRequest = new CreateRequest("change", newChange);
 	    	CreateResponse cResponse = restApi.create(cRequest);
-    		printWarnningsOrErrors(createResponse, rdto, "updateRallyChangeSet. CreateChange");
+    		printWarnningsOrErrors(cResponse, rdto, "updateRallyChangeSet. CreateChange");
 	    }
 	    return createResponse.wasSuccessful();
     }
 	
 	private JsonObject createChangeSet(RallyDetailsDTO rdto) throws IOException {
 		JsonObject newChangeset = new JsonObject();
-		JsonObject scmJsonObject = createSCMRef(rdto);
-		String scmRef = scmJsonObject.get("_ref").toString();
-        newChangeset.addProperty("SCMRepository", scmRef); 
+		JsonObject scmJsonObject = createSCMRef(rdto);		
+        newChangeset.add("SCMRepository", scmJsonObject); 
         //newChangeset.addProperty("Author", createUserRef());
        	newChangeset.addProperty("Revision", rdto.getRevison());
         newChangeset.addProperty("Uri", scmuri);
@@ -159,7 +158,7 @@ public class RallyConnector {
 				updateTask.addProperty("Estimate", String.valueOf(estimates));
 			}
 	        
-	        UpdateRequest updateRequest = new UpdateRequest(taskRef.get("_ref").toString(), updateTask);
+	        UpdateRequest updateRequest = new UpdateRequest(taskRef.get("_ref").getAsString(), updateTask);
 	        UpdateResponse updateResponse = restApi.update(updateRequest);
 	        printWarnningsOrErrors(updateResponse, rdto, "updateRallyTaskDetails");
 	        result = updateResponse.wasSuccessful();
