@@ -46,10 +46,11 @@ public class PostBuild extends Builder {
 	private final String startDate;
 	private final String endDate;
 	private final String debugOn;
+	private final String proxy;
 
     // Fields in config.jelly must match the parameter names in the "DataBoundConstructor"
     @DataBoundConstructor
-    public PostBuild(String userName, String password, String workspace, String project, String scmuri, String scmRepoName, String changesSince, String startDate, String endDate, String debugOn) {
+    public PostBuild(String userName, String password, String workspace, String project, String scmuri, String scmRepoName, String changesSince, String startDate, String endDate, String debugOn, String proxy) {
         this.userName = userName;
         this.password = password;
     	this.workspace = workspace;
@@ -60,6 +61,7 @@ public class PostBuild extends Builder {
     	this.startDate = startDate;
     	this.endDate = endDate;
     	this.debugOn = debugOn;
+      this.proxy = proxy;
     }
 
 	@Override
@@ -71,7 +73,7 @@ public class PostBuild extends Builder {
     	RallyConnector rallyConnector = null;
     	boolean result;
     	try {
-    		rallyConnector = new RallyConnector(userName, password, workspace, project, scmuri, scmRepoName);
+    		rallyConnector = new RallyConnector(userName, password, workspace, project, scmuri, scmRepoName, proxy);
 	        for(ChangeInformation ci : changes.getChangeInformation()) { //build level
 	        	try {
 		        	for(Object item : ci.getChangeLogSet().getItems()) { //each changes in above build
@@ -178,5 +180,9 @@ public class PostBuild extends Builder {
 
 	public String getDebugOn() {
 		return debugOn;
-	}    
+	}   
+  
+  public String getProxy(){
+      return proxy;
+  }
 }

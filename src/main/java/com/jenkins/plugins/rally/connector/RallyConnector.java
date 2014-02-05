@@ -20,6 +20,9 @@ import com.rallydev.rest.response.Response;
 import com.rallydev.rest.response.UpdateResponse;
 import com.rallydev.rest.util.Fetch;
 import com.rallydev.rest.util.QueryFilter;
+import java.net.URI;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class RallyConnector {
 	private final String userName;
@@ -36,7 +39,7 @@ public class RallyConnector {
 	public static final String WSAPI_VERSION = "v2.0";
 	private String DEFAULT_REPO_NAME_CREATED_BY_PLUGIN = "plugin_repo";
 	
-	public RallyConnector(final String userName, final String password, final String workspace, final String project, final String scmuri, final String scmRepoName) throws URISyntaxException {
+	public RallyConnector(final String userName, final String password, final String workspace, final String project, final String scmuri, final String scmRepoName, final String proxy) throws URISyntaxException {
 		this.userName = userName;
         this.password = password;
     	this.workspace = workspace;
@@ -47,6 +50,9 @@ public class RallyConnector {
     	restApi = new RallyRestApi(new URI(RALLY_URL), userName, password);
     	restApi.setWsapiVersion(WSAPI_VERSION);
         restApi.setApplicationName(APPLICATION_NAME);
+        if(proxy != null && proxy.trim().length() > 0){
+            restApi.setProxy(new URI(proxy));
+        }
 	}
 	
 	public void closeConnection() throws IOException {
