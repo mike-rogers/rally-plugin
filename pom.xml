@@ -7,7 +7,7 @@
       <version>1.466</version>
     </parent>
 
-    <artifactId>rally-update-plugin-1</artifactId>
+    <artifactId>rally-plugin</artifactId>
     <packaging>hpi</packaging>
     <name>Rally Update Plugin</name>
     <version>1.4-SNAPSHOT</version>
