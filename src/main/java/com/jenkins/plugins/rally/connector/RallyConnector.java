@@ -1,7 +1,6 @@
 package com.jenkins.plugins.rally.connector;
 
 import java.io.IOException;
-import java.io.PrintStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 
@@ -20,13 +19,10 @@ import com.rallydev.rest.response.Response;
 import com.rallydev.rest.response.UpdateResponse;
 import com.rallydev.rest.util.Fetch;
 import com.rallydev.rest.util.QueryFilter;
-import java.net.URI;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class RallyConnector {
 	private final String userName;
-	private final String password;
+	private final String apiKey;
 	private final String workspace;
 	private final String project;
 	private final String scmuri;
@@ -39,15 +35,15 @@ public class RallyConnector {
 	public static final String WSAPI_VERSION = "v2.0";
 	private String DEFAULT_REPO_NAME_CREATED_BY_PLUGIN = "plugin_repo";
 	
-	public RallyConnector(final String userName, final String password, final String workspace, final String project, final String scmuri, final String scmRepoName, final String proxy) throws URISyntaxException {
+	public RallyConnector(final String userName, final String apiKey, final String workspace, final String project, final String scmuri, final String scmRepoName, final String proxy) throws URISyntaxException {
 		this.userName = userName;
-        this.password = password;
+        this.apiKey = apiKey;
     	this.workspace = workspace;
     	this.project = project;
     	this.scmuri = scmuri;
     	this.scmRepoName = scmRepoName;
     	
-    	restApi = new RallyRestApi(new URI(RALLY_URL), userName, password);
+    	restApi = new RallyRestApi(new URI(RALLY_URL), apiKey);
     	restApi.setWsapiVersion(WSAPI_VERSION);
         restApi.setApplicationName(APPLICATION_NAME);
         if(proxy != null && proxy.trim().length() > 0){
@@ -227,7 +223,7 @@ public class RallyConnector {
 	
 	private String getAnyOtherRepoName(RallyDetailsDTO rdto) throws IOException {
 		QueryRequest scmRequest = new QueryRequest("SCMRepository");
-        scmRequest.setFetch(new Fetch("ObjectID","Name","Name"));        
+        scmRequest.setFetch(new Fetch("ObjectID", "Name", "Name"));
         scmRequest.setWorkspace(workspace);
         String anyOtherRepoName = "";
         try {
