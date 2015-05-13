@@ -47,10 +47,31 @@ public class RallyConnector {
     	restApi.setWsapiVersion(WSAPI_VERSION);
         restApi.setApplicationName(APPLICATION_NAME);
         if(proxy != null && proxy.trim().length() > 0){
-            restApi.setProxy(new URI(proxy));
+            initializeProxy(proxy);
         }
 	}
-	
+
+	private void initializeProxy(String proxy) throws URISyntaxException {
+		URI proxyUri = new URI(proxy);
+		String userInfo = proxyUri.getUserInfo();
+
+		if (userInfo != null && !userInfo.isEmpty()) {
+            if (userInfo.contains(":")) {
+                String[] tokens = userInfo.split(":");
+                if (tokens.length != 2) {
+                    throw new URISyntaxException(proxy, "The URI must have a userName and a apiKey (or neither)");
+                }
+                String username = tokens[0];
+                String passwd = tokens[1];
+                restApi.setProxy(proxyUri, username, passwd);
+            } else {
+                throw new URISyntaxException(proxy, "Unable to set userName on proxy URI without apiKey");
+            }
+        } else {
+            restApi.setProxy(proxyUri);
+        }
+	}
+
 	public void closeConnection() throws IOException {
 		restApi.close();
 	}
