@@ -6,6 +6,7 @@ import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.jenkins.plugins.rally.RallyException;
 import org.apache.commons.lang.StringUtils;
 
 import com.google.gson.JsonArray;
@@ -23,8 +24,7 @@ import com.rallydev.rest.util.Fetch;
 import com.rallydev.rest.util.QueryFilter;
 import org.apache.commons.lang3.text.StrSubstitutor;
 
-public class RallyConnector {
-    private final String userName;
+public class RallyConnector implements AlmConnector {
     private final String workspace;
     private final String scmUri;
     private final String scmRepoName;
@@ -36,8 +36,7 @@ public class RallyConnector {
     public static final String WSAPI_VERSION = "v2.0";
     private String DEFAULT_REPO_NAME_CREATED_BY_PLUGIN = "plugin_repo";
 
-    public RallyConnector(final String userName, final String apiKey, final String workspace, final String project, final String scmUri, final String scmRepoName, final String proxy) throws URISyntaxException {
-        this.userName = userName;
+    public RallyConnector(final String apiKey, final String workspace, final String scmUri, final String scmRepoName, final String proxy) throws URISyntaxException {
         this.workspace = workspace;
         this.scmUri = scmUri;
         this.scmRepoName = scmRepoName;
@@ -75,23 +74,37 @@ public class RallyConnector {
         restApi.close();
     }
 
-    public boolean updateRallyChangeSet(RallyDetailsDTO rdto) throws IOException {
-        rdto.getOut().println("Updating Rally -- " + rdto.getMsg());
-        JsonObject newChangeset = createChangeSet(rdto);
+    public void updateChangeset(RallyDetailsDTO details) throws RallyException {
+        details.getOut().println("Updating Rally -- " + details.getMsg());
+        JsonObject newChangeset = createChangeSet(details);
         CreateRequest createRequest = new CreateRequest("Changeset", newChangeset);
-        CreateResponse createResponse = restApi.create(createRequest);
-        printWarningsOrErrors(createResponse, rdto, "updateRallyChangeSet.CreateChangeSet");
+        CreateResponse createResponse;
+
+        try {
+            createResponse = restApi.create(createRequest);
+        } catch (IOException exception) {
+            throw new RallyException(exception);
+        }
+
+        printWarningsOrErrors(createResponse, details, "updateChangeset.CreateChangeSet");
         String csRef = createResponse.getObject().get("_ref").getAsString();
-        for(int i=0; i<rdto.getFileNameAndTypes().length;i++) {
-            String fileName = rdto.getFileNameAndTypes()[i][0];
-            String fileType = rdto.getFileNameAndTypes()[i][1];
-            String revision = rdto.getRevison();
+        for(int i=0; i<details.getFileNameAndTypes().length;i++) {
+            String fileName = details.getFileNameAndTypes()[i][0];
+            String fileType = details.getFileNameAndTypes()[i][1];
+            String revision = details.getRevison();
             JsonObject newChange = createChange(csRef, fileName, fileType, revision);
             CreateRequest cRequest = new CreateRequest("change", newChange);
-            CreateResponse cResponse = restApi.create(cRequest);
-            printWarningsOrErrors(cResponse, rdto, "updateRallyChangeSet. CreateChange");
+            try {
+                CreateResponse cResponse = restApi.create(cRequest);
+                printWarningsOrErrors(cResponse, details, "updateChangeset. CreateChange");
+            } catch (IOException exception) {
+                throw new RallyException(exception);
+            }
         }
-        return createResponse.wasSuccessful();
+
+        if (!createResponse.wasSuccessful()) {
+            throw new RallyException();
+        }
     }
 
     private String resolveScmUri(String revision) {
@@ -102,47 +115,55 @@ public class RallyConnector {
         return substitutor.replace(this.scmUri);
     }
 
-    private JsonObject createChangeSet(RallyDetailsDTO rdto) throws IOException {
+    private JsonObject createChangeSet(RallyDetailsDTO details) throws RallyException {
         JsonObject newChangeset = new JsonObject();
-        JsonObject scmJsonObject = createSCMRef(rdto);
+        JsonObject scmJsonObject = createSCMRef(details);
         newChangeset.add("SCMRepository", scmJsonObject);
-        //newChangeset.addProperty("Author", createUserRef());
-        newChangeset.addProperty("Revision", rdto.getRevison());
-        newChangeset.addProperty("Uri", resolveScmUri(rdto.getRevison()));
-        newChangeset.addProperty("CommitTimestamp", rdto.getTimeStamp());
-        newChangeset.addProperty("Message", rdto.getMsg());
+        newChangeset.addProperty("Author", createUserRef(details));
+        newChangeset.addProperty("Revision", details.getRevison());
+        newChangeset.addProperty("Uri", resolveScmUri(details.getRevison()));
+        newChangeset.addProperty("CommitTimestamp", details.getTimeStamp());
+        newChangeset.addProperty("Message", details.getMsg());
         //newChangeset.addProperty("Builds", createBuilds());
 
         JsonArray artifactsJsonArray = new JsonArray();
         JsonObject ref;
-        if(rdto.isStory())
-            ref = createStoryRef(rdto);
+        if(details.isStory())
+            ref = createStoryRef(details);
         else
-            ref = createDefectRef(rdto);
+            ref = createDefectRef(details);
         artifactsJsonArray.add(ref);
         newChangeset.add("Artifacts", artifactsJsonArray);
         return newChangeset;
     }
 
-    private JsonObject createStoryRef(RallyDetailsDTO rdto) throws IOException {
+    private JsonObject createStoryRef(RallyDetailsDTO rdto) throws RallyException {
         QueryRequest  storyRequest = new QueryRequest("HierarchicalRequirement");
-        storyRequest.setFetch(new Fetch("FormattedID","Name","Changesets"));
+        storyRequest.setFetch(new Fetch("FormattedID", "Name", "Changesets"));
         storyRequest.setQueryFilter(new QueryFilter("FormattedID", "=", rdto.getId()));
         storyRequest.setWorkspace(workspace);
-        QueryResponse storyQueryResponse = restApi.query(storyRequest);
-        printWarningsOrErrors(storyQueryResponse, rdto, "createStoryRef");
-        return storyQueryResponse.getResults().get(0).getAsJsonObject();
+        try {
+            QueryResponse storyQueryResponse = restApi.query(storyRequest);
+            printWarningsOrErrors(storyQueryResponse, rdto, "createStoryRef");
+            return storyQueryResponse.getResults().get(0).getAsJsonObject();
+        } catch (IOException exception) {
+            throw new RallyException(exception);
+        }
     }
 
-    private JsonObject createDefectRef(RallyDetailsDTO rdto) throws IOException {
+    private JsonObject createDefectRef(RallyDetailsDTO rdto) throws RallyException {
         QueryRequest defectRequest = new QueryRequest("defect");
         defectRequest.setFetch(new Fetch("FormattedId", "Name", "Changesets"));
         defectRequest.setQueryFilter(new QueryFilter("FormattedID", "=", rdto.getId()));
         defectRequest.setWorkspace(workspace);
         defectRequest.setScopedDown(true);
-        QueryResponse defectResponse = restApi.query(defectRequest);
-        printWarningsOrErrors(defectResponse, rdto, "createDefectRef");
-        return defectResponse.getResults().get(0).getAsJsonObject();
+        try {
+            QueryResponse defectResponse = restApi.query(defectRequest);
+            printWarningsOrErrors(defectResponse, rdto, "createDefectRef");
+            return defectResponse.getResults().get(0).getAsJsonObject();
+        } catch (IOException exception) {
+            throw new RallyException(exception);
+        }
     }
 
     private JsonObject createChange(String csRef, String fileName, String fileType, String revision) {
@@ -154,71 +175,83 @@ public class RallyConnector {
         return newChange;
     }
 
-    public boolean updateRallyTaskDetails(RallyDetailsDTO rdto) throws IOException {
+    public boolean updateRallyTaskDetails(RallyDetailsDTO details) throws RallyException {
         boolean result = false;
-        if(rdto.isStory() && (!rdto.getTaskIndex().isEmpty() || !rdto.getTaskID().isEmpty())) {
-            JsonObject storyRef = createStoryRef(rdto);
+        if(details.isStory() && (!details.getTaskIndex().isEmpty() || !details.getTaskID().isEmpty())) {
+            JsonObject storyRef = createStoryRef(details);
             JsonObject taskRef;
-            if(!rdto.getTaskIndex().isEmpty()) {
-                int ti = Integer.parseInt(rdto.getTaskIndex());
+            if(!details.getTaskIndex().isEmpty()) {
+                int ti = Integer.parseInt(details.getTaskIndex());
                 ti = ti - 1; //index starts with 0 in rally
-                taskRef = createTaskRef(storyRef.get("_ref").toString(), "TaskIndex", String.valueOf(ti), rdto);
+                taskRef = createTaskRef(storyRef.get("_ref").toString(), "TaskIndex", String.valueOf(ti), details);
             } else {
-                taskRef = createTaskRef(storyRef.get("_ref").toString(), "FormattedID", rdto.getTaskID(), rdto);
+                taskRef = createTaskRef(storyRef.get("_ref").toString(), "FormattedID", details.getTaskID(), details);
             }
 
             JsonObject updateTask = new JsonObject();
-            if(!rdto.getTaskStatus().isEmpty())
-                updateTask.addProperty("State", rdto.getTaskStatus());
+            if(!details.getTaskStatus().isEmpty())
+                updateTask.addProperty("State", details.getTaskStatus());
             else {
                 updateTask.addProperty("State", "In-Progress");
             }
-            if(!rdto.getTaskToDO().isEmpty()) {
-                Double todo = Double.parseDouble(rdto.getTaskToDO());
+            if(!details.getTaskToDO().isEmpty()) {
+                Double todo = Double.parseDouble(details.getTaskToDO());
                 updateTask.addProperty("ToDo", String.valueOf(todo));
             }
-            if(!rdto.getTaskActuals().isEmpty()) {
-                Double actuals = Double.parseDouble(rdto.getTaskActuals());
+            if(!details.getTaskActuals().isEmpty()) {
+                Double actuals = Double.parseDouble(details.getTaskActuals());
                 try {
                     actuals = actuals + taskRef.get("Actuals").getAsDouble();
                 } catch(Exception ignored) {}
                 updateTask.addProperty("Actuals", String.valueOf(actuals));
             }
-            if(!rdto.getTaskEstimates().isEmpty()) {
-                Double estimates = Double.parseDouble(rdto.getTaskEstimates());
+            if(!details.getTaskEstimates().isEmpty()) {
+                Double estimates = Double.parseDouble(details.getTaskEstimates());
                 updateTask.addProperty("Estimate", String.valueOf(estimates));
             }
 
-            UpdateRequest updateRequest = new UpdateRequest(taskRef.get("_ref").getAsString(), updateTask);
-            UpdateResponse updateResponse = restApi.update(updateRequest);
-            printWarningsOrErrors(updateResponse, rdto, "updateRallyTaskDetails");
-            result = updateResponse.wasSuccessful();
+            try {
+                UpdateRequest updateRequest = new UpdateRequest(taskRef.get("_ref").getAsString(), updateTask);
+                UpdateResponse updateResponse = restApi.update(updateRequest);
+                printWarningsOrErrors(updateResponse, details, "updateRallyTaskDetails");
+                result = updateResponse.wasSuccessful();
+            } catch (IOException exception) {
+                throw new RallyException(exception);
+            }
         }
         return result;
     }
 
-    private JsonObject createTaskRef(String storyRef, String taskQueryAttr, String taskQueryValue, RallyDetailsDTO rdto) throws IOException {
+    private JsonObject createTaskRef(String storyRef, String taskQueryAttr, String taskQueryValue, RallyDetailsDTO rdto) throws RallyException {
         QueryRequest taskRequest = new QueryRequest("Task");
         taskRequest.setFetch(new Fetch("FormattedID", "Actuals", "State"));
         QueryFilter qf = new QueryFilter("WorkProduct", "=", storyRef);
         qf = qf.and(new QueryFilter(taskQueryAttr, "=", taskQueryValue));
         taskRequest.setQueryFilter(qf);
-        QueryResponse taskQueryResponse = restApi.query(taskRequest);
-        printWarningsOrErrors(taskQueryResponse, rdto, "createTaskRef");
-        return taskQueryResponse.getResults().get(0).getAsJsonObject();
+        try {
+            QueryResponse taskQueryResponse = restApi.query(taskRequest);
+            printWarningsOrErrors(taskQueryResponse, rdto, "createTaskRef");
+            return taskQueryResponse.getResults().get(0).getAsJsonObject();
+        } catch (IOException exception) {
+            throw new RallyException(exception);
+        }
     }
 
-    private JsonObject createSCMRef(RallyDetailsDTO rdto) throws IOException {
+    private JsonObject createSCMRef(RallyDetailsDTO rdto) throws RallyException {
         QueryRequest scmRequest = new QueryRequest("SCMRepository");
         scmRequest.setFetch(new Fetch("ObjectID","Name","SCMType"));
         scmRequest.setWorkspace(workspace);
         scmRequest.setQueryFilter(new QueryFilter("Name", "=", getSCMRepoName(rdto, scmRepoName)));
-        QueryResponse scmQueryResponse = restApi.query(scmRequest);
-        printWarningsOrErrors(scmQueryResponse, rdto, "createSCMRef");
-        return scmQueryResponse.getResults().get(0).getAsJsonObject();
+        try {
+            QueryResponse scmQueryResponse = restApi.query(scmRequest);
+            printWarningsOrErrors(scmQueryResponse, rdto, "createSCMRef");
+            return scmQueryResponse.getResults().get(0).getAsJsonObject();
+        } catch (IOException io) {
+            throw new RallyException(io);
+        }
     }
 
-    private String getSCMRepoName(RallyDetailsDTO rdto, String scmRepoName) throws IOException {
+    private String getSCMRepoName(RallyDetailsDTO rdto, String scmRepoName) throws RallyException {
         if(StringUtils.isNotBlank(scmRepoName)  && isProvidedScmRepoNameExist(rdto, scmRepoName))
             return scmRepoName;
 
@@ -232,7 +265,7 @@ public class RallyConnector {
         return createDefaultPluginScmRepositoryName(rdto);
     }
 
-    private Boolean isProvidedScmRepoNameExist(RallyDetailsDTO rdto, String scmRepoName) throws IOException {
+    private Boolean isProvidedScmRepoNameExist(RallyDetailsDTO rdto, String scmRepoName) {
         QueryRequest scmRequest = new QueryRequest("SCMRepository");
         scmRequest.setFetch(new Fetch("ObjectID","Name","Name"));
         scmRequest.setQueryFilter(new QueryFilter("Name", "=", scmRepoName));
@@ -248,7 +281,7 @@ public class RallyConnector {
         return StringUtils.isNotBlank(providedRepoName);
     }
 
-    private String getAnyOtherRepoName(RallyDetailsDTO rdto) throws IOException {
+    private String getAnyOtherRepoName(RallyDetailsDTO rdto) {
         QueryRequest scmRequest = new QueryRequest("SCMRepository");
         scmRequest.setFetch(new Fetch("ObjectID", "Name", "Name"));
         scmRequest.setWorkspace(workspace);
@@ -263,9 +296,9 @@ public class RallyConnector {
         return anyOtherRepoName;
     }
 
-    private boolean isDefaultPluginRepoNameExist(RallyDetailsDTO rdto) throws IOException {
+    private boolean isDefaultPluginRepoNameExist(RallyDetailsDTO rdto) {
         QueryRequest scmRequest = new QueryRequest("SCMRepository");
-        scmRequest.setFetch(new Fetch("ObjectID","Name","Name"));
+        scmRequest.setFetch(new Fetch("ObjectID", "Name", "Name"));
         scmRequest.setQueryFilter(new QueryFilter("Name", "=", DEFAULT_REPO_NAME_CREATED_BY_PLUGIN));
         scmRequest.setWorkspace(workspace);
         String defaultPluginRepoName = "";
@@ -279,7 +312,7 @@ public class RallyConnector {
         return StringUtils.isNotBlank(defaultPluginRepoName);
     }
 
-    private String createDefaultPluginScmRepositoryName(RallyDetailsDTO rdto) throws IOException {
+    private String createDefaultPluginScmRepositoryName(RallyDetailsDTO rdto) throws RallyException {
         JsonObject newSCMRepository = new JsonObject();
         newSCMRepository.addProperty("Description", "This repository name is created by rally update plugin");
 
@@ -289,22 +322,28 @@ public class RallyConnector {
             newSCMRepository.addProperty("Uri", resolveScmUri(rdto.getRevison()));
         CreateRequest createRequest = new CreateRequest("SCMRepository", newSCMRepository);
         System.out.println(createRequest.getBody());
-        CreateResponse createResponse = restApi.create(createRequest);
-        printWarningsOrErrors(createResponse, rdto, "createDefaultPluginScmRepositoryName");
-        return DEFAULT_REPO_NAME_CREATED_BY_PLUGIN;
+        try {
+            CreateResponse createResponse = restApi.create(createRequest);
+            printWarningsOrErrors(createResponse, rdto, "createDefaultPluginScmRepositoryName");
+            return DEFAULT_REPO_NAME_CREATED_BY_PLUGIN;
+        } catch (IOException exception) {
+            throw new RallyException(exception);
+        }
     }
 
-    private JsonObject createUserRef(RallyDetailsDTO rdto) throws IOException {
+    private String createUserRef(RallyDetailsDTO rdto) throws RallyException {
         QueryRequest userRequest = new QueryRequest("User");
         userRequest.setFetch(new Fetch("UserName", "Subscription", "DisplayName"));
-        userRequest.setQueryFilter(new QueryFilter("UserName", "=", userName));
-        QueryResponse userQueryResponse = restApi.query(userRequest);
-        printWarningsOrErrors(userQueryResponse, rdto, "createUserRef");
-        JsonArray userQueryResults = userQueryResponse.getResults();
-        JsonElement userQueryElement = userQueryResults.get(0);
-        JsonObject userQueryObject = userQueryElement.getAsJsonObject();
-        userQueryObject.get("_ref").toString();
-        return userQueryObject;
+        userRequest.setQueryFilter(new QueryFilter("UserName", "=", "username"));
+        try {
+            QueryResponse userQueryResponse = restApi.query(userRequest);
+            printWarningsOrErrors(userQueryResponse, rdto, "createUserRef");
+            JsonArray userQueryResults = userQueryResponse.getResults();
+            JsonElement userQueryElement = userQueryResults.get(0);
+            return userQueryElement.getAsJsonObject().get("_ref").toString();
+        } catch (IOException exception) {
+            throw new RallyException(exception);
+        }
     }
 
     private void printWarningsOrErrors(Response response, RallyDetailsDTO rdto, String methodName) {

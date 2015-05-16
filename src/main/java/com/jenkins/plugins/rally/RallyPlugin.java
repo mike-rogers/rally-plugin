@@ -1,5 +1,6 @@
 package com.jenkins.plugins.rally;
 
+import com.jenkins.plugins.rally.config.RallyPluginConfiguration;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.BuildListener;
@@ -19,56 +20,33 @@ import com.jenkins.plugins.rally.scm.ChangeInformation;
 import com.jenkins.plugins.rally.scm.Changes;
 
 /**
- *
- *
  * @author Tushar Shinde
+ * @author R. Michael Rogers
  */
-public class PostBuild extends Builder {
+public class RallyPlugin extends Builder {
+    private final RallyPluginConfiguration config;
 
-    private final String userName;
-    private final String apiKey;
-    private final String workspace;
-    private final String project;
-    private final String scmuri;
-    private final String scmRepoName;
-    private final String changesSince;
-    private final String startDate;
-    private final String endDate;
-    private final String debugOn;
-    private final String proxy;
-
-    // Fields in config.jelly must match the parameter names in the "DataBoundConstructor"
     @DataBoundConstructor
-    public PostBuild(String userName, String apiKey, String workspace, String project, String scmuri, String scmRepoName, String changesSince, String startDate, String endDate, String debugOn, String proxy) {
-        this.userName = userName;
-        this.apiKey = apiKey;
-        this.workspace = workspace;
-        this.project = project;
-        this.scmuri = scmuri;
-        this.scmRepoName = scmRepoName;
-        this.changesSince = changesSince;
-        this.startDate = startDate;
-        this.endDate = endDate;
-        this.debugOn = debugOn;
-        this.proxy = proxy;
+    public RallyPlugin(RallyPluginConfiguration config) {
+        this.config = config;
     }
 
     @Override
     public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) {
         PrintStream out = listener.getLogger();
-        Changes changes = PostBuildHelper.getChanges(changesSince, startDate, endDate, build, out);
+        Changes changes = null; //PostBuildHelper.getChanges(changesSince, startDate, endDate, build, out);
 
         RallyConnector rallyConnector = null;
         try {
-            rallyConnector = new RallyConnector(userName, apiKey, workspace, project, scmuri, scmRepoName, proxy);
+            rallyConnector = null; //new RallyConnector(apiKey, workspace, project, scmuri, scmRepoName, proxy);
             for(ChangeInformation ci : changes.getChangeInformation()) { //build level
                 try {
                     for(Object item : ci.getChangeLogSet().getItems()) { //each changes in above build
                         ChangeLogSet.Entry cse = (ChangeLogSet.Entry) item;
-                        RallyDetailsDTO rdto = PostBuildHelper.populateRallyDetailsDTO(debugOn, build, ci, cse, out);
+                        RallyDetailsDTO rdto = null; //PostBuildHelper.populateRallyDetailsDTO(debugOn, build, ci, cse, out);
                         if(!rdto.getId().isEmpty()) {
                             try {
-                                rallyConnector.updateRallyChangeSet(rdto);
+                                rallyConnector.updateChangeset(rdto);
                             } catch(Exception e) {
                                 out.println("\trally update plug-in error: could not update changeset entry: "  + e.getMessage());
                                 e.printStackTrace(out);
@@ -103,7 +81,9 @@ public class PostBuild extends Builder {
         return true;
     }
 
-
+    public RallyPluginConfiguration getConfig() {
+        return config;
+    }
 
     @Override
     public DescriptorImpl getDescriptor() {
@@ -124,52 +104,5 @@ public class PostBuild extends Builder {
         public String getDisplayName() {
             return "Update Rally Task and ChangeSet";
         }
-    }
-
-    /**
-     * We'll use this from the <tt>config.jelly</tt>.
-     */
-    public String getUserName() {
-        return userName;
-    }
-
-    public String getApiKey() {
-        return apiKey;
-    }
-
-    public String getWorkspace() {
-        return workspace;
-    }
-
-    public String getProject() {
-        return project;
-    }
-
-    public String getScmuri() {
-        return scmuri;
-    }
-
-    public String getScmRepoName() {
-        return scmRepoName;
-    }
-
-    public String getChangesSince() {
-        return changesSince;
-    }
-
-    public String getStartDate() {
-        return startDate;
-    }
-
-    public String getEndDate() {
-        return endDate;
-    }
-
-    public String getDebugOn() {
-        return debugOn;
-    }
-
-    public String getProxy(){
-        return proxy;
     }
 }

@@ -1,6 +1,7 @@
 package com.jenkins.plugins.rally.connector;
 
 import java.io.PrintStream;
+import java.util.Arrays;
 
 public class RallyDetailsDTO {
 	
@@ -29,7 +30,7 @@ public class RallyDetailsDTO {
 			this.out.println("\trevison= " + revison);
 			this.out.println("\ttimeStamp= " + timeStamp);
 			this.out.println("\tid= " + id);
-			this.out.println("\tfileNameAndTypes= " + fileNameAndTypes);
+			this.out.println("\tfileNameAndTypes= " + Arrays.deepToString(fileNameAndTypes));
 			this.out.println("\tout= " + out);
 			this.out.println("\torigBuildNumber= " + origBuildNumber);
 			this.out.println("\tcurrentBuildNumber= " + currentBuildNumber);
