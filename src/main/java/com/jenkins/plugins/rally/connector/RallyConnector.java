@@ -54,7 +54,7 @@ public class RallyConnector implements AlmConnector {
         }
     }
 
-    public void closeConnection() throws IOException {
+    public void closeConnection() {
         this.rallyApiInstance.close();
     }
 
@@ -100,7 +100,6 @@ public class RallyConnector implements AlmConnector {
         newChangeset.addProperty("Uri", this.scmConnector.getRevisionUriFor(details.getRevision()));
         newChangeset.addProperty("CommitTimestamp", details.getTimeStamp());
         newChangeset.addProperty("Message", details.getMsg());
-        //newChangeset.addProperty("Builds", createBuilds());
 
         JsonArray artifactsJsonArray = new JsonArray();
         JsonObject ref;

@@ -1,29 +1,26 @@
 package com.jenkins.plugins.rally;
 
 import com.jenkins.plugins.rally.config.RallyPluginConfiguration;
+import com.jenkins.plugins.rally.connector.AlmConnector;
 import com.jenkins.plugins.rally.connector.RallyApi;
+import com.jenkins.plugins.rally.connector.RallyConnector;
+import com.jenkins.plugins.rally.connector.RallyDetailsDTO;
 import com.jenkins.plugins.rally.scm.JenkinsConnector;
 import com.jenkins.plugins.rally.scm.ScmConnector;
 import com.rallydev.rest.RallyRestApi;
 import hudson.Extension;
 import hudson.Launcher;
-import hudson.model.BuildListener;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
-import hudson.scm.ChangeLogSet;
+import hudson.model.BuildListener;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
+import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.io.PrintStream;
 import java.net.URI;
 import java.net.URISyntaxException;
-
-import org.kohsuke.stapler.DataBoundConstructor;
-
-import com.jenkins.plugins.rally.connector.RallyConnector;
-import com.jenkins.plugins.rally.connector.RallyDetailsDTO;
-import com.jenkins.plugins.rally.scm.ChangeInformation;
-import com.jenkins.plugins.rally.scm.Changes;
+import java.util.List;
 
 /**
  * @author Tushar Shinde
@@ -36,6 +33,7 @@ public class RallyPlugin extends Builder {
 
     private final RallyPluginConfiguration config;
     private RallyRestApi restApi;
+    private ScmConnector jenkinsConnector;
 
     @DataBoundConstructor
     public RallyPlugin(RallyPluginConfiguration config) throws RallyException {
@@ -52,56 +50,61 @@ public class RallyPlugin extends Builder {
         }
         this.restApi.setWsapiVersion(WSAPI_VERSION);
         this.restApi.setApplicationName(APPLICATION_NAME);
+
+        this.jenkinsConnector = new JenkinsConnector();
+        this.jenkinsConnector.setScmConfiguration(this.config.getScm());
+        this.jenkinsConnector.setBuildConfiguration(this.config.getBuild());
     }
 
     @Override
     public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) {
+        boolean shouldBuildSucceed = true;
+        AlmConnector rallyConnector = null;
         PrintStream out = listener.getLogger();
-        Changes changes = null; // PostBuildHelper.getChanges(changesSince, startDate, endDate, build, out);
 
-        RallyConnector rallyConnector = null;
+        List<RallyDetailsDTO> detailsList;
+        try {
+            detailsList = this.jenkinsConnector.getChanges(build, out);
+        } catch (RallyException exception) {
+            out.println("Unable to retrieve SCM changes from Jenkins: " + exception.getMessage());
+            return false;
+        }
+
         try {
             rallyConnector = createRallyConnector();
-            for(ChangeInformation ci : changes.getChangeInformation()) { //build level
-                try {
-                    for(Object item : ci.getChangeLogSet().getItems()) { //each changes in above build
-                        ChangeLogSet.Entry cse = (ChangeLogSet.Entry) item;
-                        RallyDetailsDTO rdto = null; //PostBuildHelper.populateRallyDetailsDTO(debugOn, build, ci, cse, out);
-                        if(!rdto.getId().isEmpty()) {
-                            try {
-                                rallyConnector.updateChangeset(rdto);
-                            } catch(Exception e) {
-                                out.println("\trally update plug-in error: could not update changeset entry: "  + e.getMessage());
-                                e.printStackTrace(out);
-                            }
 
-                            try {
-                                rallyConnector.updateRallyTaskDetails(rdto);
-                            } catch(Exception e) {
-                                out.println("\trally update plug-in error: could not update TaskDetails entry: "  + e.getMessage());
-                                e.printStackTrace(out);
-                            }
-                        } else {
-                            out.println("Could not update rally due to absence of id in a comment " + rdto.getMsg());
-                        }
+            for (RallyDetailsDTO details : detailsList) {
+                if (!details.getId().isEmpty()) {
+                    try {
+                        rallyConnector.updateChangeset(details);
+                    } catch (Exception e) {
+                        out.println("\trally update plug-in error: could not update changeset entry: " + e.getMessage());
+                        e.printStackTrace(out);
+                        shouldBuildSucceed = false;
                     }
-                } catch(Exception e) {
-                    out.println("\trally update plug-in error: could not iterate or populate through getChangeLogSet().getItems(): "  + e.getMessage());
-                    e.printStackTrace(out);
+
+                    try {
+                        rallyConnector.updateRallyTaskDetails(details);
+                    } catch (Exception e) {
+                        out.println("\trally update plug-in error: could not update TaskDetails entry: " + e.getMessage());
+                        e.printStackTrace(out);
+                        shouldBuildSucceed = false;
+                    }
+                } else {
+                    out.println("Could not update rally due to absence of id in a comment " + details.getMsg());
                 }
             }
-        } catch(Exception e) {
-            out.println("\trally update plug-in error: error while creating connection to rally: " + e.getMessage());
+        } catch(RallyException e) {
+            out.println("Unable to initialize Rally plugin, possibly due to misconfiguration: " + e.getMessage());
             e.printStackTrace(out);
+            shouldBuildSucceed = false;
         } finally {
-            try {
-                if(rallyConnector != null) rallyConnector.closeConnection();
-            } catch(Exception e) {out.println("\trally update plug-in error: error while closing connection: " + e.getMessage());
-                e.printStackTrace(out);
+            if (rallyConnector != null) {
+                rallyConnector.closeConnection();
             }
         }
 
-        return true;
+        return shouldBuildSucceed;
     }
 
     private RallyConnector createRallyConnector() throws RallyException {

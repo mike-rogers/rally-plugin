@@ -5,7 +5,6 @@ import hudson.model.Describable;
 import hudson.model.Descriptor;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 

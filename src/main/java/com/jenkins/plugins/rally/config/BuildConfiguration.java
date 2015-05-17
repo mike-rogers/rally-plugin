@@ -21,6 +21,10 @@ public class BuildConfiguration implements Describable<BuildConfiguration> {
         return new BuildConfigurationDescriptor();
     }
 
+    public ScmChangeCaptureRange getCaptureRangeAsEnum() {
+        return this.captureRange;
+    }
+
     @Extension
     public static final class BuildConfigurationDescriptor extends Descriptor<BuildConfiguration> {
         public String getDisplayName() {

@@ -2,8 +2,6 @@ package com.jenkins.plugins.rally.utils;
 
 import org.apache.commons.lang3.text.StrSubstitutor;
 
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
 

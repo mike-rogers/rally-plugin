@@ -1,12 +1,8 @@
 package com.jenkins.plugins.rally.config;
 
 import hudson.Extension;
-import hudson.model.AbstractProject;
 import hudson.model.Describable;
 import hudson.model.Descriptor;
-import hudson.tasks.BuildStepDescriptor;
-import hudson.tasks.Builder;
-import jenkins.model.Jenkins;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 public class RallyConfiguration implements Describable<RallyConfiguration> {
