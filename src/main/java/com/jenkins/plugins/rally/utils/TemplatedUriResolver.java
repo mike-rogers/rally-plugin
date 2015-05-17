@@ -8,20 +8,20 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class TemplatedUriResolver {
-    public URI resolveCommitUri(String uriTemplate, String revision) throws URISyntaxException {
+    public String resolveCommitUri(String uriTemplate, String revision) {
         Map<String, String> values = new HashMap<String, String>();
         values.put("revision", revision);
 
         StrSubstitutor substitutor = new StrSubstitutor(values, "${", "}");
-        return new URI(substitutor.replace(uriTemplate));
+        return substitutor.replace(uriTemplate);
     }
 
-    public URI resolveFileCommitUri(String uriTemplate, String revision, String filename) throws URISyntaxException {
+    public String resolveFileCommitUri(String uriTemplate, String revision, String filename) {
         Map<String, String> values = new HashMap<String, String>();
         values.put("revision", revision);
         values.put("file", filename);
 
         StrSubstitutor substitutor = new StrSubstitutor(values, "${", "}");
-        return new URI(substitutor.replace(uriTemplate));
+        return substitutor.replace(uriTemplate);
     }
 }

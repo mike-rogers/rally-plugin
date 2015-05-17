@@ -19,6 +19,7 @@ public class Changes {
     public Changes(AbstractBuild build, int buildNumber) {
         this.build = build;
         AbstractBuild b = build;
+        // TODO: is this logic necessary? if so, write a test.
         while (b != null && b.getNumber() >= buildNumber) {
             populateChangeInformation(b, b.getChangeSet());
             b = (AbstractBuild) b.getPreviousBuild();

@@ -53,7 +53,7 @@ public class PostBuildHelper {
 		}
 		else
 			rdto.setStory(false);
-		rdto.setRevison(cse.getCommitId());
+		rdto.setRevision(cse.getCommitId());
 		if(cse.getTimestamp() == -1)
 			rdto.setTimeStamp(ci.getBuildTimeStamp());
 		else

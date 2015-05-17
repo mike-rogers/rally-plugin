@@ -1,6 +1,10 @@
 package com.jenkins.plugins.rally;
 
 import com.jenkins.plugins.rally.config.RallyPluginConfiguration;
+import com.jenkins.plugins.rally.connector.RallyApi;
+import com.jenkins.plugins.rally.scm.JenkinsConnector;
+import com.jenkins.plugins.rally.scm.ScmConnector;
+import com.rallydev.rest.RallyRestApi;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.BuildListener;
@@ -11,6 +15,8 @@ import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 
 import java.io.PrintStream;
+import java.net.URI;
+import java.net.URISyntaxException;
 
 import org.kohsuke.stapler.DataBoundConstructor;
 
@@ -24,21 +30,38 @@ import com.jenkins.plugins.rally.scm.Changes;
  * @author R. Michael Rogers
  */
 public class RallyPlugin extends Builder {
+    private static final String RALLY_URL = "https://rally1.rallydev.com";
+    private static final String APPLICATION_NAME = "RallyConnect";
+    private static final String WSAPI_VERSION = "v2.0";
+
     private final RallyPluginConfiguration config;
+    private RallyRestApi restApi;
 
     @DataBoundConstructor
-    public RallyPlugin(RallyPluginConfiguration config) {
+    public RallyPlugin(RallyPluginConfiguration config) throws RallyException {
         this.config = config;
+
+        initialize();
+    }
+
+    private void initialize() throws RallyException {
+        try {
+            this.restApi = new RallyRestApi(new URI(RALLY_URL), this.config.getRally().getApiKey());
+        } catch (URISyntaxException exception) {
+            throw new RallyException(exception);
+        }
+        this.restApi.setWsapiVersion(WSAPI_VERSION);
+        this.restApi.setApplicationName(APPLICATION_NAME);
     }
 
     @Override
     public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) {
         PrintStream out = listener.getLogger();
-        Changes changes = null; //PostBuildHelper.getChanges(changesSince, startDate, endDate, build, out);
+        Changes changes = null; // PostBuildHelper.getChanges(changesSince, startDate, endDate, build, out);
 
         RallyConnector rallyConnector = null;
         try {
-            rallyConnector = null; //new RallyConnector(apiKey, workspace, project, scmuri, scmRepoName, proxy);
+            rallyConnector = createRallyConnector();
             for(ChangeInformation ci : changes.getChangeInformation()) { //build level
                 try {
                     for(Object item : ci.getChangeLogSet().getItems()) { //each changes in above build
@@ -79,6 +102,23 @@ public class RallyPlugin extends Builder {
         }
 
         return true;
+    }
+
+    private RallyConnector createRallyConnector() throws RallyException {
+        RallyConnector connector = new RallyConnector();
+        connector.setRallyConfiguration(this.config.getRally());
+        connector.setRallyApiInstance((RallyApi) this.restApi);
+        connector.setScmConnector(createScmConnector());
+        connector.setAdvancedConfiguration(this.config.getAdvanced());
+
+        return connector;
+    }
+
+    private ScmConnector createScmConnector() {
+        ScmConnector connector = new JenkinsConnector();
+        connector.setScmConfiguration(this.config.getScm());
+
+        return connector;
     }
 
     public RallyPluginConfiguration getConfig() {

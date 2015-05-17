@@ -6,7 +6,7 @@ import java.util.Arrays;
 public class RallyDetailsDTO {
 	
 	private String msg;
-	private String revison;
+	private String revision;
 	private String timeStamp;
 	private String id;
 	private String [][] fileNameAndTypes;
@@ -27,7 +27,7 @@ public class RallyDetailsDTO {
 	public void printAllFields() {
 		if(!isPrinted) {
 			this.out.println("\tmsg= " + msg);
-			this.out.println("\trevison= " + revison);
+			this.out.println("\trevision= " + revision);
 			this.out.println("\ttimeStamp= " + timeStamp);
 			this.out.println("\tid= " + id);
 			this.out.println("\tfileNameAndTypes= " + Arrays.deepToString(fileNameAndTypes));
@@ -52,14 +52,14 @@ public class RallyDetailsDTO {
 	public void setMsg(String msg) {
 		this.msg = msg;
 	}
-	public String getRevison() {
-		return revison;
+	public String getRevision() {
+		return revision;
 	}
-	public void setRevison(String revison) {
-		if(revison == null)
-			this.revison = "0";
+	public void setRevision(String revision) {
+		if(revision == null)
+			this.revision = "0";
 		else
-			this.revison = revison;
+			this.revision = revision;
 	}
 	public String getTimeStamp() {
 		return timeStamp;

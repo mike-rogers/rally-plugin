@@ -1,5 +1,6 @@
 package com.jenkins.plugins.rally.config;
 
+import com.jenkins.plugins.rally.utils.TemplatedUriResolver;
 import hudson.Extension;
 import hudson.model.Describable;
 import hudson.model.Descriptor;
