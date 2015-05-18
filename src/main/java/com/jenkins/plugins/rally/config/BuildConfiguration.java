@@ -1,14 +1,8 @@
 package com.jenkins.plugins.rally.config;
 
-import hudson.Extension;
-import hudson.model.Describable;
-import hudson.model.Descriptor;
-import org.kohsuke.stapler.DataBoundConstructor;
-
-public class BuildConfiguration implements Describable<BuildConfiguration> {
+public class BuildConfiguration {
     private final ScmChangeCaptureRange captureRange;
 
-    @DataBoundConstructor
     public BuildConfiguration(String captureRange) {
         this.captureRange = ScmChangeCaptureRange.valueOf(captureRange);
     }
@@ -17,18 +11,7 @@ public class BuildConfiguration implements Describable<BuildConfiguration> {
         return captureRange.getValue();
     }
 
-    public Descriptor<BuildConfiguration> getDescriptor() {
-        return new BuildConfigurationDescriptor();
-    }
-
     public ScmChangeCaptureRange getCaptureRangeAsEnum() {
         return this.captureRange;
-    }
-
-    @Extension
-    public static final class BuildConfigurationDescriptor extends Descriptor<BuildConfiguration> {
-        public String getDisplayName() {
-            return "Build Information";
-        }
     }
 }

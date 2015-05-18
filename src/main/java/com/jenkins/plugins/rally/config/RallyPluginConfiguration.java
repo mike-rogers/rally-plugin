@@ -3,7 +3,6 @@ package com.jenkins.plugins.rally.config;
 import hudson.Extension;
 import hudson.model.Describable;
 import hudson.model.Descriptor;
-import org.kohsuke.stapler.DataBoundConstructor;
 
 public class RallyPluginConfiguration implements Describable<RallyPluginConfiguration> {
     private final RallyConfiguration rallyConfig;
@@ -11,7 +10,6 @@ public class RallyPluginConfiguration implements Describable<RallyPluginConfigur
     private final BuildConfiguration buildConfig;
     private final AdvancedConfiguration advancedConfig;
 
-    @DataBoundConstructor
     public RallyPluginConfiguration(RallyConfiguration rally, ScmConfiguration scm, BuildConfiguration build, AdvancedConfiguration advanced) {
         this.rallyConfig = rally;
         this.scmConfig = scm;

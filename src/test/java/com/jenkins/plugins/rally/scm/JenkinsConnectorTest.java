@@ -19,6 +19,26 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+class MyChangeLogSet extends ChangeLogSet {
+    List<Entry> detailsList;
+
+    @SuppressWarnings("unchecked")
+    protected MyChangeLogSet(AbstractBuild build, List<Entry> detailsList) {
+        super(build);
+
+        this.detailsList = detailsList;
+    }
+
+    @Override
+    public boolean isEmptySet() {
+        return false;
+    }
+
+    public Iterator iterator() {
+        return detailsList.iterator();
+    }
+}
+
 @RunWith(MockitoJUnitRunner.class)
 public class JenkinsConnectorTest {
     @Test
@@ -28,17 +48,7 @@ public class JenkinsConnectorTest {
         final ChangeLogSet.Entry entry = mock(ChangeLogSet.Entry.class);
         when(entry.getCommitId()).thenReturn("12345");
 
-        @SuppressWarnings("unchecked")
-        ChangeLogSet changeLogSet = new ChangeLogSet(null) {
-            @Override
-            public boolean isEmptySet() {
-                return false;
-            }
-
-            public Iterator iterator() {
-                return Collections.singletonList(entry).iterator();
-            }
-        };
+        ChangeLogSet changeLogSet = new MyChangeLogSet(null, Collections.singletonList(entry));
 
         AbstractBuild build = mock(AbstractBuild.class);
         when(build.getPreviousBuild()).thenReturn(null);
@@ -47,7 +57,7 @@ public class JenkinsConnectorTest {
         when(build.getChangeSet()).thenReturn(changeLogSet);
 
         ScmConnector connector = new JenkinsConnector();
-        connector.setScmConfiguration(new ScmConfiguration(null, null));
+        connector.setScmConfiguration(new ScmConfiguration(null));
         connector.setBuildConfiguration(new BuildConfiguration("SinceLastBuild"));
         connector.setAdvancedConfiguration(new AdvancedConfiguration("http://some.url/", "false"));
 
@@ -66,29 +76,8 @@ public class JenkinsConnectorTest {
         final ChangeLogSet.Entry secondEntry = mock(ChangeLogSet.Entry.class);
         when(secondEntry.getCommitId()).thenReturn("12345");
 
-        @SuppressWarnings("unchecked")
-        ChangeLogSet firstChangeLogSet = new ChangeLogSet(null) {
-            @Override
-            public boolean isEmptySet() {
-                return false;
-            }
-
-            public Iterator iterator() {
-                return Collections.singletonList(firstEntry).iterator();
-            }
-        };
-
-        @SuppressWarnings("unchecked")
-        ChangeLogSet secondChangeLogSet = new ChangeLogSet(null) {
-            @Override
-            public boolean isEmptySet() {
-                return false;
-            }
-
-            public Iterator iterator() {
-                return Collections.singletonList(secondEntry).iterator();
-            }
-        };
+        ChangeLogSet firstChangeLogSet = new MyChangeLogSet(null, Collections.singletonList(firstEntry));
+        ChangeLogSet secondChangeLogSet = new MyChangeLogSet(null, Collections.singletonList(secondEntry));
 
         AbstractBuild lastSuccessfulBuild = mock(AbstractBuild.class);
         when(lastSuccessfulBuild.getPreviousBuild()).thenReturn(null);
@@ -103,7 +92,7 @@ public class JenkinsConnectorTest {
         when(build.getChangeSet()).thenReturn(firstChangeLogSet);
 
         ScmConnector connector = new JenkinsConnector();
-        connector.setScmConfiguration(new ScmConfiguration(null, null));
+        connector.setScmConfiguration(new ScmConfiguration(null));
         connector.setBuildConfiguration(new BuildConfiguration("SinceLastSuccessfulBuild"));
         connector.setAdvancedConfiguration(new AdvancedConfiguration("http://some.url/", "false"));
 

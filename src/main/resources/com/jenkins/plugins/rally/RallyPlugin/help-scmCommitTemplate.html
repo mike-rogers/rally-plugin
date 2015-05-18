@@ -1,0 +1,16 @@
+<div>
+    <p>
+        URI that will be linked with every Commit added to a Rally Work Item's Changeset.
+    </p>
+
+    <p>
+        If you have a web-accessible repository browser and wish to deeply link into that system with
+        commits linked in Rally Changesets, use the <kbd>${revision}</kbd> variable to do so.
+    </p>
+
+    <p>
+        For example, if you want a commit with hash <i>12ab34cd56ef</i> to be accessible at
+        <i>http://github.com/your-name/your-project/commits/12ab34cd56ef</i> then you would set this property as:
+        <kbd>http://github.com/your-name/your-project/commits/${revision}</kbd>
+    </p>
+</div>

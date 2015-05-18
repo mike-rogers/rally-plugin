@@ -10,6 +10,21 @@
       See global.jelly for a general discussion about jelly script.
     -->
 
-    <f:property field="config" title="Plugin Configuration"/>
+    <f:entry title="Rally API Key" field="rallyApiKey"><f:password /></f:entry>
+
+    <f:entry title="Rally Workspace Name" field="rallyWorkspaceName"><f:textbox /></f:entry>
+    <f:entry title="Rally Repository Name" field="rallyScmName"><f:textbox /></f:entry>
+
+    <f:entry title="Commit URI" field="scmCommitTemplate"><f:textbox /></f:entry>
+
+    <f:entry title="Update changes...">
+        <select name="buildCaptureRange">
+            <option value="SinceLastBuild" selected="${it.buildCaptureRange}">since last build</option>
+            <option value="SinceLastSuccessfulBuild" selected="${it.buildCaptureRange}">since last successful build</option>
+        </select>
+    </f:entry>
+
+    <f:entry title="Turn on debug level?" field="advancedIsDebugOn"><f:checkbox value="${it.isDebugOn}"/></f:entry>
+    <f:entry title="Proxy URI" field="advancedProxyUri"><f:textbox /></f:entry>
 
 </j:jelly>

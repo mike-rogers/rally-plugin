@@ -17,5 +17,4 @@ public interface RallyApi {
     CreateResponse create(CreateRequest createRequest) throws IOException;
     QueryResponse query(QueryRequest queryRequest) throws IOException;
     UpdateResponse update(UpdateRequest updateRequest) throws IOException;
-
 }

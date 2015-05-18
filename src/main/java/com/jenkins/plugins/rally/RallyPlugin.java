@@ -1,6 +1,6 @@
 package com.jenkins.plugins.rally;
 
-import com.jenkins.plugins.rally.config.RallyPluginConfiguration;
+import com.jenkins.plugins.rally.config.*;
 import com.jenkins.plugins.rally.connector.AlmConnector;
 import com.jenkins.plugins.rally.connector.RallyApi;
 import com.jenkins.plugins.rally.connector.RallyConnector;
@@ -36,8 +36,13 @@ public class RallyPlugin extends Builder {
     private ScmConnector jenkinsConnector;
 
     @DataBoundConstructor
-    public RallyPlugin(RallyPluginConfiguration config) throws RallyException {
-        this.config = config;
+    public RallyPlugin(String rallyApiKey, String rallyWorkspaceName, String rallyScmName, String scmCommitTemplate, String buildCaptureRange, String advancedIsDebugOn, String advancedProxyUri) throws RallyException, URISyntaxException {
+        RallyConfiguration rally = new RallyConfiguration(rallyApiKey, rallyWorkspaceName, rallyScmName);
+        ScmConfiguration scm = new ScmConfiguration(scmCommitTemplate);
+        BuildConfiguration build = new BuildConfiguration(buildCaptureRange);
+        AdvancedConfiguration advanced = new AdvancedConfiguration(advancedProxyUri, advancedIsDebugOn);
+
+        this.config = new RallyPluginConfiguration(rally, scm, build, advanced);
 
         initialize();
     }
@@ -126,6 +131,34 @@ public class RallyPlugin extends Builder {
 
     public RallyPluginConfiguration getConfig() {
         return config;
+    }
+
+    public String getRallyApiKey() {
+        return this.config.getRally().getApiKey();
+    }
+
+    public String getRallyWorkspaceName() {
+        return this.config.getRally().getWorkspaceName();
+    }
+
+    public String getRallyScmName() {
+        return this.config.getRally().getScmName();
+    }
+
+    public String getScmCommitTemplate() {
+        return this.config.getScm().getCommitTemplate();
+    }
+
+    public String getBuildCaptureRange() {
+        return this.config.getBuild().getCaptureRange();
+    }
+
+    public String getAdvancedIsDebugOn() {
+        return this.config.getAdvanced().getIsDebugOn();
+    }
+
+    public String getAdvancedProxyUri() {
+        return this.config.getAdvanced().getProxyUri().toString();
     }
 
     @Override
