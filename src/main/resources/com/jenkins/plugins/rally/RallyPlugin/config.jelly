@@ -19,8 +19,8 @@
 
     <f:entry title="Update changes...">
         <select name="buildCaptureRange">
-            <option value="SinceLastBuild" selected="${it.buildCaptureRange}">since last build</option>
-            <option value="SinceLastSuccessfulBuild" selected="${it.buildCaptureRange}">since last successful build</option>
+            <option value="SinceLastBuild" selected="${it.buildCaptureRange == 'SinceLastBuild'}">since last build</option>
+            <option value="SinceLastSuccessfulBuild" selected="${it.buildCaptureRange == 'SinceLastSuccessfulBuild'}">since last successful build</option>
         </select>
     </f:entry>
 

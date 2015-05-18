@@ -45,10 +45,25 @@ public class RallyPluginTest {
     }
 
     @Test
-    public void shouldAssertWhenUsernameIsNull() throws Exception {
-        FreeStyleProject project = jenkins.getInstance().createProject(FreeStyleProject.class, "testProject");
-//        project.getBuildersList().add(new RallyPlugin(getRallyPluginConfiguration()));
-        FreeStyleBuild build = project.scheduleBuild2(0).get();
-        assertThat(build, is(notNullValue()));
+    public void shouldStoreOtherConfigurationForRecall() throws Exception {
+        String[] keysToTest = {
+                "rallyApiKey",
+                "rallyWorkspaceName",
+                "rallyScmName",
+                "scmCommitTemplate",
+                "buildCaptureRange",
+                "advancedProxyUri",
+                "advancedIsDebugOn"
+        };
+
+        FreeStyleProject p = jenkins.getInstance().createProject(FreeStyleProject.class, "testProject");
+        RallyPlugin before = new RallyPlugin(API_KEY, WORKSPACE_NAME, SCM_NAME, COMMIT_URI_STRING, "SinceLastSuccessfulBuild", "true", "http://proxy.url");
+        p.getBuildersList().add(before);
+
+        jenkins.submit(jenkins.createWebClient().getPage(p,"configure").getFormByName("config"));
+
+        RallyPlugin after = p.getBuildersList().get(RallyPlugin.class);
+
+        jenkins.assertEqualBeans(before, after, Joiner.on(',').join(keysToTest));
     }
 }
