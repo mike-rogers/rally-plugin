@@ -150,9 +150,9 @@ public class JenkinsConnector implements ScmConnector {
     private String getMessage(ChangeLogSet.Entry cse, String origBuildNumber, String currentBuildNumber) {
         String msg;
         if(origBuildNumber.equals(currentBuildNumber))
-            msg = cse.getAuthor() + " # " + cse.getMsg() + " (" + origBuildNumber + ")";
+            msg = cse.getAuthor() + " # " + cse.getMsg() + " (Build #" + origBuildNumber + ")";
         else
-            msg = cse.getAuthor() + " # " + cse.getMsg() + " (" + currentBuildNumber + " - " + origBuildNumber + ")";
+            msg = cse.getAuthor() + " # " + cse.getMsg() + " (Builds #" + currentBuildNumber + " - " + origBuildNumber + ")";
         return msg;
     }
 
