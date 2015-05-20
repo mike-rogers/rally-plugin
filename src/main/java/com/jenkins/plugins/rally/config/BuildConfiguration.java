@@ -8,7 +8,7 @@ public class BuildConfiguration {
     }
 
     public String getCaptureRange() {
-        return captureRange.getValue();
+        return this.captureRange.name();
     }
 
     public ScmChangeCaptureRange getCaptureRangeAsEnum() {
