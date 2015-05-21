@@ -5,5 +5,5 @@ import com.jenkins.plugins.rally.RallyException;
 public interface AlmConnector {
     void updateChangeset(RallyDetailsDTO details) throws RallyException;
     void updateRallyTaskDetails(RallyDetailsDTO details) throws RallyException;
-    void closeConnection();
+    void closeConnection() throws RallyException;
 }

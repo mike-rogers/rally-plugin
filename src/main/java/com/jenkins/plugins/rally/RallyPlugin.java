@@ -2,7 +2,6 @@ package com.jenkins.plugins.rally;
 
 import com.jenkins.plugins.rally.config.*;
 import com.jenkins.plugins.rally.connector.AlmConnector;
-import com.jenkins.plugins.rally.connector.RallyApi;
 import com.jenkins.plugins.rally.connector.RallyConnector;
 import com.jenkins.plugins.rally.connector.RallyDetailsDTO;
 import com.jenkins.plugins.rally.scm.JenkinsConnector;
@@ -43,8 +42,6 @@ public class RallyPlugin extends Builder {
         AdvancedConfiguration advanced = new AdvancedConfiguration(advancedProxyUri, advancedIsDebugOn);
 
         this.config = new RallyPluginConfiguration(rally, scm, build, advanced);
-
-        initialize();
     }
 
     private void initialize() throws RallyException {
@@ -59,10 +56,19 @@ public class RallyPlugin extends Builder {
         this.jenkinsConnector = new JenkinsConnector();
         this.jenkinsConnector.setScmConfiguration(this.config.getScm());
         this.jenkinsConnector.setBuildConfiguration(this.config.getBuild());
+        this.jenkinsConnector.setAdvancedConfiguration(this.config.getAdvanced());
     }
 
     @Override
     public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) {
+        try {
+            initialize();
+        } catch (RallyException exception) {
+            System.out.println(exception.getMessage());
+            exception.printStackTrace(System.out);
+            return false;
+        }
+
         boolean shouldBuildSucceed = true;
         AlmConnector rallyConnector = null;
         PrintStream out = listener.getLogger();
@@ -105,7 +111,11 @@ public class RallyPlugin extends Builder {
             shouldBuildSucceed = false;
         } finally {
             if (rallyConnector != null) {
-                rallyConnector.closeConnection();
+                try {
+                    rallyConnector.closeConnection();
+                } catch (RallyException exception) {
+                    // Ignore
+                }
             }
         }
 
@@ -115,16 +125,9 @@ public class RallyPlugin extends Builder {
     private RallyConnector createRallyConnector() throws RallyException {
         RallyConnector connector = new RallyConnector();
         connector.setRallyConfiguration(this.config.getRally());
-        connector.setRallyApiInstance((RallyApi) this.restApi);
-        connector.setScmConnector(createScmConnector());
+        connector.setRallyApiInstance(this.restApi);
+        connector.setScmConnector(this.jenkinsConnector);
         connector.setAdvancedConfiguration(this.config.getAdvanced());
-
-        return connector;
-    }
-
-    private ScmConnector createScmConnector() {
-        ScmConnector connector = new JenkinsConnector();
-        connector.setScmConfiguration(this.config.getScm());
 
         return connector;
     }

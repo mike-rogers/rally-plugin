@@ -4,6 +4,7 @@ import com.jenkins.plugins.rally.RallyException;
 import com.jenkins.plugins.rally.config.AdvancedConfiguration;
 import com.jenkins.plugins.rally.config.RallyConfiguration;
 import com.jenkins.plugins.rally.scm.ScmConnector;
+import com.rallydev.rest.RallyRestApi;
 import com.rallydev.rest.request.QueryRequest;
 import com.rallydev.rest.response.QueryResponse;
 import org.junit.Before;
@@ -18,7 +19,7 @@ import static org.mockito.Mockito.when;
 @RunWith(MockitoJUnitRunner.class)
 public class RallyConnectorTest {
     @Mock
-    private RallyApi rallyApi;
+    private RallyRestApi rallyApi;
 
     @Mock
     private ScmConnector scmConnector;
@@ -32,24 +33,6 @@ public class RallyConnectorTest {
         this.connector.setRallyApiInstance(rallyApi);
         this.connector.setScmConnector(scmConnector);
         this.connector.setAdvancedConfiguration(new AdvancedConfiguration("http://proxy.url", "false"));
-    }
-
-    @Test(expected= RallyException.class)
-    public void shouldThrowExceptionIfAttemptToUpdateNonStory() throws Exception {
-        RallyDetailsDTO details = new RallyDetailsDTO();
-        details.setStory(false);
-
-        this.connector.updateRallyTaskDetails(details);
-    }
-
-    @Test(expected=RallyException.class)
-    public void shouldThrowExceptionIfAttemptToUpdateWithoutTaskIndexAndTaskId() throws Exception {
-        RallyDetailsDTO details = new RallyDetailsDTO();
-        details.setStory(true);
-        details.setTaskIndex("");
-        details.setTaskID("");
-
-        this.connector.updateRallyTaskDetails(details);
     }
 
     @Test(expected=RallyException.class)

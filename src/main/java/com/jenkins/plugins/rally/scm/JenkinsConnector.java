@@ -87,6 +87,9 @@ public class JenkinsConnector implements ScmConnector {
             ChangeLogSet.Entry changeLogEntry,
             AbstractBuild build,
             PrintStream out) {
+        Boolean isDebugOn = this.advancedConfig.getIsDebugOn() == null
+                ? false
+                : Boolean.parseBoolean(this.advancedConfig.getIsDebugOn());
         RallyDetailsDTO details = new RallyDetailsDTO();
         details.setOrigBuildNumber(changeInformation.getBuildNumber());
         details.setCurrentBuildNumber(String.valueOf(build.number));
@@ -94,7 +97,7 @@ public class JenkinsConnector implements ScmConnector {
         details.setFileNameAndTypes(getFileNameAndTypes(changeLogEntry));
         details.setId(getId(changeLogEntry));
         details.setOut(out);
-        details.setDebugOn(Boolean.valueOf(this.advancedConfig.getIsDebugOn()));
+        details.setDebugOn(isDebugOn);
         details.setStory(details.getId().startsWith("US"));
         details.setRevision(changeLogEntry.getCommitId());
 

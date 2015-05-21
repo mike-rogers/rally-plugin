@@ -24,7 +24,6 @@ public class RallyPluginTest {
     @Test
     public void shouldStoreConfigurationForRecall() throws Exception {
         String[] keysToTest = {
-                "rallyApiKey",
                 "rallyWorkspaceName",
                 "rallyScmName",
                 "scmCommitTemplate",
@@ -47,7 +46,6 @@ public class RallyPluginTest {
     @Test
     public void shouldStoreOtherConfigurationForRecall() throws Exception {
         String[] keysToTest = {
-                "rallyApiKey",
                 "rallyWorkspaceName",
                 "rallyScmName",
                 "scmCommitTemplate",

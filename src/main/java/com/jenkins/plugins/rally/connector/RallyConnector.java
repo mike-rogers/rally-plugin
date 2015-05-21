@@ -7,6 +7,7 @@ import com.jenkins.plugins.rally.RallyException;
 import com.jenkins.plugins.rally.config.AdvancedConfiguration;
 import com.jenkins.plugins.rally.config.RallyConfiguration;
 import com.jenkins.plugins.rally.scm.ScmConnector;
+import com.rallydev.rest.RallyRestApi;
 import com.rallydev.rest.request.CreateRequest;
 import com.rallydev.rest.request.QueryRequest;
 import com.rallydev.rest.request.UpdateRequest;
@@ -26,7 +27,7 @@ public class RallyConnector implements AlmConnector {
     private static final String DEFAULT_REPO_NAME_CREATED_BY_PLUGIN = "plugin_repo";
 
     private RallyConfiguration rallyConfiguration;
-    private RallyApi rallyApiInstance;
+    private RallyRestApi rallyApiInstance;
     private ScmConnector scmConnector;
     private AdvancedConfiguration advancedConfiguration;
 
@@ -54,8 +55,12 @@ public class RallyConnector implements AlmConnector {
         }
     }
 
-    public void closeConnection() {
-        this.rallyApiInstance.close();
+    public void closeConnection() throws RallyException {
+        try {
+            this.rallyApiInstance.close();
+        } catch (IOException exception) {
+            throw new RallyException(exception);
+        }
     }
 
     public void updateChangeset(RallyDetailsDTO details) throws RallyException {
@@ -95,7 +100,6 @@ public class RallyConnector implements AlmConnector {
         JsonObject newChangeset = new JsonObject();
         JsonObject scmJsonObject = createSCMRef(details);
         newChangeset.add("SCMRepository", scmJsonObject);
-        newChangeset.addProperty("Author", createUserRef(details));
         newChangeset.addProperty("Revision", details.getRevision());
         newChangeset.addProperty("Uri", this.scmConnector.getRevisionUriFor(details.getRevision()));
         newChangeset.addProperty("CommitTimestamp", details.getTimeStamp());
@@ -161,7 +165,7 @@ public class RallyConnector implements AlmConnector {
 
     public void updateRallyTaskDetails(RallyDetailsDTO details) throws RallyException {
         if (!details.isStory() || (details.getTaskIndex().isEmpty() && details.getTaskID().isEmpty())) {
-            throw new RallyException();
+            return;
         }
 
         String storyRef = getStoryRef(details);
@@ -266,7 +270,9 @@ public class RallyConnector implements AlmConnector {
             printWarningsOrErrors(scmQueryResponse, rdto, "isProvidedScmRepoNameExist");
             JsonObject scmJsonObject = scmQueryResponse.getResults().get(0).getAsJsonObject();
             providedRepoName = scmJsonObject.get("_refObjectName").getAsString();
-        } catch (Exception ignored) {
+        } catch (IOException ignored) {
+            System.out.println(ignored.getMessage());
+            ignored.printStackTrace(System.out);
         }
         return StringUtils.isNotBlank(providedRepoName);
     }
@@ -321,21 +327,6 @@ public class RallyConnector implements AlmConnector {
         }
     }
 
-    private String createUserRef(RallyDetailsDTO rdto) throws RallyException {
-        QueryRequest userRequest = new QueryRequest("User");
-        userRequest.setFetch(new Fetch("UserName", "Subscription", "DisplayName"));
-        userRequest.setQueryFilter(new QueryFilter("UserName", "=", "username"));
-        try {
-            QueryResponse userQueryResponse = this.rallyApiInstance.query(userRequest);
-            printWarningsOrErrors(userQueryResponse, rdto, "createUserRef");
-            JsonArray userQueryResults = userQueryResponse.getResults();
-            JsonElement userQueryElement = userQueryResults.get(0);
-            return userQueryElement.getAsJsonObject().get("_ref").toString();
-        } catch (IOException exception) {
-            throw new RallyException(exception);
-        }
-    }
-
     private void printWarningsOrErrors(Response response, RallyDetailsDTO rdto, String methodName) {
         if (response.wasSuccessful() && rdto.isDebugOn()) {
             rdto.getOut().println("\tSuccess from method: " + methodName);
@@ -382,13 +373,14 @@ public class RallyConnector implements AlmConnector {
         initializeProxyPerhaps();
     }
 
-    public void setRallyApiInstance(RallyApi rallyApiInstance) {
+    public void setRallyApiInstance(RallyRestApi rallyApiInstance) {
         this.rallyApiInstance = rallyApiInstance;
     }
 
     public boolean isProxyInitializeable() {
         return this.advancedConfiguration != null
                 && this.advancedConfiguration.getProxyUri() != null
+                && !this.advancedConfiguration.getProxyUri().toString().isEmpty()
                 && this.rallyApiInstance != null;
     }
 }
