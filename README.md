@@ -1,4 +1,5 @@
 ## Jenkins Rally Plug-in
+[![Build Status](https://travis-ci.org/mike-rogers/rally-plugin.svg?branch=minor-refactoring)](https://travis-ci.org/mike-rogers/rally-plugin)
 
 This is a Jenkins Plug-in which
 
