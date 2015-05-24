@@ -1,16 +1,10 @@
 package com.jenkins.plugins.rally;
 
 import com.google.common.base.Joiner;
-import com.jenkins.plugins.rally.config.ScmChangeCaptureRange;
-import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
 import org.junit.Rule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
 
 public class RallyPluginTest {
     private static final String API_KEY = "API_KEY";

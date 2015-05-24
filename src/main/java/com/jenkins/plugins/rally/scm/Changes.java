@@ -22,16 +22,7 @@ public class Changes {
         // TODO: is this logic necessary? if so, write a test.
         while (b != null && b.getNumber() >= buildNumber) {
             populateChangeInformation(b, b.getChangeSet());
-            b = (AbstractBuild) b.getPreviousBuild();
-        }
-    }
-
-    public Changes(AbstractBuild build, int startBuildNumber, int endBuildNumber) {
-        this.build = build;
-        AbstractBuild b = build;
-        while (b != null && b.getNumber() >= startBuildNumber && b.getNumber() <= endBuildNumber) {
-            populateChangeInformation(b, b.getChangeSet());
-            b = (AbstractBuild) b.getNextBuild();
+            b = b.getPreviousBuild();
         }
     }
 

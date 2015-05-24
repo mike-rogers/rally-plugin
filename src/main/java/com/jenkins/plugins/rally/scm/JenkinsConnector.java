@@ -87,9 +87,7 @@ public class JenkinsConnector implements ScmConnector {
             ChangeLogSet.Entry changeLogEntry,
             AbstractBuild build,
             PrintStream out) {
-        Boolean isDebugOn = this.advancedConfig.getIsDebugOn() == null
-                ? false
-                : Boolean.parseBoolean(this.advancedConfig.getIsDebugOn());
+        Boolean isDebugOn = this.advancedConfig.getIsDebugOn() != null && Boolean.parseBoolean(this.advancedConfig.getIsDebugOn());
         RallyDetailsDTO details = new RallyDetailsDTO();
         details.setOrigBuildNumber(changeInformation.getBuildNumber());
         details.setCurrentBuildNumber(String.valueOf(build.number));
