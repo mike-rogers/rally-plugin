@@ -48,7 +48,6 @@ public final class CommitMessageParserTest {
         RallyDetailsDTO details = CommitMessageParser.parse(commitMessage);
 
         assertThat(details.getTaskID(), is(equalTo("TA54321")));
-        assertThat(details.getId(), is(equalTo("US12345")));
     }
 
     @Test
@@ -58,6 +57,57 @@ public final class CommitMessageParserTest {
         RallyDetailsDTO details = CommitMessageParser.parse(commitMessage);
 
         assertThat(details.getTaskIndex(), is(equalTo("3")));
-        assertThat(details.getId(), is(equalTo("US12345")));
+    }
+
+    @Test
+    public void shouldParseTaskActualsFromCommitMessage() {
+        String commitMessage = "US12345: fixes #3 with actuals: 15";
+
+        RallyDetailsDTO details = CommitMessageParser.parse(commitMessage);
+
+        assertThat(details.getTaskActuals(), is(equalTo("15")));
+    }
+
+    @Test
+    public void shouldParseTaskStatusFromCommitMessage() {
+        String[][] commitMessageAndStatusPairs = new String[][]
+                {
+                        { "US12345: #2 status: in progress", "In-Progress" },
+                        { "US12345: #2 status: complete", "Completed" },
+                        { "US12345: #2 status: define", "Defined" }
+                };
+
+        for (String[] pair : commitMessageAndStatusPairs) {
+            RallyDetailsDTO details = CommitMessageParser.parse(pair[0]);
+
+            assertThat(details.getTaskStatus(), is(equalTo(pair[1])));
+        }
+    }
+
+    @Test
+    public void shouldParseTaskToDoHoursFromCommitMessage() {
+        String commitMessage = "US12345: fixes #3 with to do: 15";
+
+        RallyDetailsDTO details = CommitMessageParser.parse(commitMessage);
+
+        assertThat(details.getTaskToDO(), is(equalTo("15")));
+    }
+
+    @Test
+    public void shouldMarkTaskToDoAsZeroWhenTaskStatusIsCompleted() {
+        String commitMessage = "US12345: fixes #3 with status: completed";
+
+        RallyDetailsDTO details = CommitMessageParser.parse(commitMessage);
+
+        assertThat(details.getTaskToDO(), is(equalTo("0")));
+    }
+
+    @Test
+    public void shouldParseTaskEstimationFromCommitMessage() {
+        String commitMessage = "US12345: fixes #3 with estimate: 15";
+
+        RallyDetailsDTO details = CommitMessageParser.parse(commitMessage);
+
+        assertThat(details.getTaskEstimates(), is(equalTo("15")));
     }
 }

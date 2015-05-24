@@ -4,7 +4,6 @@ import com.jenkins.plugins.rally.RallyException;
 import com.jenkins.plugins.rally.config.AdvancedConfiguration;
 import com.jenkins.plugins.rally.config.BuildConfiguration;
 import com.jenkins.plugins.rally.config.ScmConfiguration;
-import com.jenkins.plugins.rally.connector.RallyAttributes;
 import com.jenkins.plugins.rally.connector.RallyDetailsDTO;
 import com.jenkins.plugins.rally.utils.CommitMessageParser;
 import com.jenkins.plugins.rally.utils.TemplatedUriResolver;
@@ -12,7 +11,6 @@ import hudson.model.AbstractBuild;
 import hudson.model.Result;
 import hudson.model.Run;
 import hudson.scm.ChangeLogSet;
-import org.apache.commons.lang3.StringUtils;
 
 import java.io.PrintStream;
 import java.text.DateFormat;
@@ -98,10 +96,6 @@ public class JenkinsConnector implements ScmConnector {
         details.setStory(details.getId().startsWith("US"));
         details.setRevision(changeLogEntry.getCommitId());
 
-        if (details.isStory()) {
-            populateTaskDetails(details, changeLogEntry.getMsg());
-        }
-
         if (changeLogEntry.getTimestamp() == -1) {
             details.setTimeStamp(changeInformation.getBuildTimeStamp());
         } else {
@@ -110,41 +104,6 @@ public class JenkinsConnector implements ScmConnector {
 
         return details;
     }
-
-    private void populateTaskDetails(final RallyDetailsDTO details, final String msg) {
-        if (msg != null) {
-            String rallyStatus = mapStatusToRallyStatus(getRallyAttrValue(msg.toUpperCase(), RallyAttributes.Status));
-            details.setTaskStatus(rallyStatus);
-            details.setTaskActuals(getRallyAttrValue(msg.toUpperCase(), RallyAttributes.Actuals));
-            details.setTaskToDO(getRallyAttrValue(msg.toUpperCase(), RallyAttributes.ToDo));
-            details.setTaskEstimates(getRallyAttrValue(msg.toUpperCase(), RallyAttributes.Estimates));
-        }
-    }
-
-    private String getRallyAttrValue(String comment, RallyAttributes attr) {
-        String value = StringUtils.substringAfter(comment, attr.getType1());
-        if(value.isEmpty())
-            value = StringUtils.substringAfter(comment, attr.getType2());
-        if(value.isEmpty())
-            value = StringUtils.substringAfter(comment, attr.getType3());
-        if(value.isEmpty())
-            value = StringUtils.substringAfter(comment, attr.getType4());
-
-        return StringUtils.substringBefore(value, ",").trim();
-    }
-
-    private String mapStatusToRallyStatus(String status) {
-        String rallyStatus = "";
-        if(StringUtils.startsWithIgnoreCase(status, "In-"))
-            rallyStatus = "In-Progress";
-        if(StringUtils.startsWithIgnoreCase(status, "comp"))
-            rallyStatus = "Completed";
-        if(StringUtils.startsWithIgnoreCase(status, "def"))
-            rallyStatus = "Defined";
-        return rallyStatus;
-    }
-
-
     private String getMessage(ChangeLogSet.Entry cse, String origBuildNumber, String currentBuildNumber) {
         String msg;
         if(origBuildNumber.equals(currentBuildNumber))
