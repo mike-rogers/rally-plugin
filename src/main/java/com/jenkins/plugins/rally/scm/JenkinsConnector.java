@@ -6,6 +6,7 @@ import com.jenkins.plugins.rally.config.BuildConfiguration;
 import com.jenkins.plugins.rally.config.ScmConfiguration;
 import com.jenkins.plugins.rally.connector.RallyAttributes;
 import com.jenkins.plugins.rally.connector.RallyDetailsDTO;
+import com.jenkins.plugins.rally.utils.CommitMessageParser;
 import com.jenkins.plugins.rally.utils.TemplatedUriResolver;
 import hudson.model.AbstractBuild;
 import hudson.model.Result;
@@ -19,8 +20,6 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class JenkinsConnector implements ScmConnector {
     private final TemplatedUriResolver uriResolver;
@@ -87,13 +86,13 @@ public class JenkinsConnector implements ScmConnector {
             ChangeLogSet.Entry changeLogEntry,
             AbstractBuild build,
             PrintStream out) {
+        String message = changeLogEntry.getMsg();
         Boolean isDebugOn = this.advancedConfig.getIsDebugOn() != null && Boolean.parseBoolean(this.advancedConfig.getIsDebugOn());
-        RallyDetailsDTO details = new RallyDetailsDTO();
+        RallyDetailsDTO details = CommitMessageParser.parse(message);
         details.setOrigBuildNumber(changeInformation.getBuildNumber());
         details.setCurrentBuildNumber(String.valueOf(build.number));
         details.setMsg(getMessage(changeLogEntry, details.getOrigBuildNumber(), details.getCurrentBuildNumber()));
         details.setFileNameAndTypes(getFileNameAndTypes(changeLogEntry));
-        details.setId(getId(changeLogEntry));
         details.setOut(out);
         details.setDebugOn(isDebugOn);
         details.setStory(details.getId().startsWith("US"));
@@ -114,8 +113,6 @@ public class JenkinsConnector implements ScmConnector {
 
     private void populateTaskDetails(final RallyDetailsDTO details, final String msg) {
         if (msg != null) {
-            details.setTaskIndex(getRallyAttrValue(msg.toUpperCase(), RallyAttributes.TaskIndex));
-            details.setTaskID(getRallyAttrValue(msg.toUpperCase(), RallyAttributes.TaskID));
             String rallyStatus = mapStatusToRallyStatus(getRallyAttrValue(msg.toUpperCase(), RallyAttributes.Status));
             details.setTaskStatus(rallyStatus);
             details.setTaskActuals(getRallyAttrValue(msg.toUpperCase(), RallyAttributes.Actuals));
@@ -167,26 +164,6 @@ public class JenkinsConnector implements ScmConnector {
             i++;
         }
         return fileNames;
-    }
-
-    private String getId(ChangeLogSet.Entry cse) {
-        String id = "";
-        String comment = cse.getMsg();
-        if(comment != null) {
-            id = evaluateRegEx(comment, "US[0-9]+[\\w]*");
-            if(id.isEmpty())
-                id = evaluateRegEx(comment, "DE[0-9]+[\\w]*");
-        }
-        return id.trim();
-    }
-
-    private String evaluateRegEx(String comment, String regEx) {
-        String result = "";
-        Pattern p = Pattern.compile(regEx);
-        Matcher m = p.matcher(comment);
-        if(m.find())
-            result = m.group(0);
-        return result;
     }
 
     private String toTimeZoneTimeStamp(long time) {

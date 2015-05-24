@@ -47,6 +47,7 @@ public class JenkinsConnectorTest {
 
         final ChangeLogSet.Entry entry = mock(ChangeLogSet.Entry.class);
         when(entry.getCommitId()).thenReturn("12345");
+        when(entry.getMsg()).thenReturn("message");
 
         ChangeLogSet changeLogSet = new MyChangeLogSet(null, Collections.singletonList(entry));
 
@@ -72,9 +73,11 @@ public class JenkinsConnectorTest {
 
         final ChangeLogSet.Entry firstEntry = mock(ChangeLogSet.Entry.class);
         when(firstEntry.getCommitId()).thenReturn("12345");
+        when(firstEntry.getMsg()).thenReturn("message");
 
         final ChangeLogSet.Entry secondEntry = mock(ChangeLogSet.Entry.class);
         when(secondEntry.getCommitId()).thenReturn("12345");
+        when(secondEntry.getMsg()).thenReturn("message");
 
         ChangeLogSet firstChangeLogSet = new MyChangeLogSet(null, Collections.singletonList(firstEntry));
         ChangeLogSet secondChangeLogSet = new MyChangeLogSet(null, Collections.singletonList(secondEntry));
