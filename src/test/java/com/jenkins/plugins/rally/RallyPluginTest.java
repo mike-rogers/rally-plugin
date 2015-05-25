@@ -10,6 +10,7 @@ public class RallyPluginTest {
     private static final String API_KEY = "API_KEY";
     private static final String WORKSPACE_NAME = "WORKSPACE_NAME";
     private static final String COMMIT_URI_STRING = "COMMIT_URI_STRING";
+    private static final String FILE_URI_STRING = "FILE_URI_STRING";
     private static final String SCM_NAME = "SCM_NAME";
 
     @Rule
@@ -21,13 +22,14 @@ public class RallyPluginTest {
                 "rallyWorkspaceName",
                 "rallyScmName",
                 "scmCommitTemplate",
+                "scmFileTemplate",
                 "buildCaptureRange",
                 "advancedProxyUri",
                 "advancedIsDebugOn"
         };
 
         FreeStyleProject p = jenkins.getInstance().createProject(FreeStyleProject.class, "testProject");
-        RallyPlugin before = new RallyPlugin(API_KEY, WORKSPACE_NAME, SCM_NAME, COMMIT_URI_STRING, "SinceLastBuild", "true", "http://proxy.url");
+        RallyPlugin before = new RallyPlugin(API_KEY, WORKSPACE_NAME, SCM_NAME, COMMIT_URI_STRING, FILE_URI_STRING, "SinceLastBuild", "true", "http://proxy.url");
         p.getBuildersList().add(before);
 
         jenkins.submit(jenkins.createWebClient().getPage(p,"configure").getFormByName("config"));
@@ -43,13 +45,14 @@ public class RallyPluginTest {
                 "rallyWorkspaceName",
                 "rallyScmName",
                 "scmCommitTemplate",
+                "scmFileTemplate",
                 "buildCaptureRange",
                 "advancedProxyUri",
                 "advancedIsDebugOn"
         };
 
         FreeStyleProject p = jenkins.getInstance().createProject(FreeStyleProject.class, "testProject");
-        RallyPlugin before = new RallyPlugin(API_KEY, WORKSPACE_NAME, SCM_NAME, COMMIT_URI_STRING, "SinceLastSuccessfulBuild", "true", "http://proxy.url");
+        RallyPlugin before = new RallyPlugin(API_KEY, WORKSPACE_NAME, SCM_NAME, COMMIT_URI_STRING, FILE_URI_STRING, "SinceLastSuccessfulBuild", "true", "http://proxy.url");
         p.getBuildersList().add(before);
 
         jenkins.submit(jenkins.createWebClient().getPage(p,"configure").getFormByName("config"));

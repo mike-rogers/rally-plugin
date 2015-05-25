@@ -35,9 +35,9 @@ public class RallyPlugin extends Builder {
     private ScmConnector jenkinsConnector;
 
     @DataBoundConstructor
-    public RallyPlugin(String rallyApiKey, String rallyWorkspaceName, String rallyScmName, String scmCommitTemplate, String buildCaptureRange, String advancedIsDebugOn, String advancedProxyUri) throws RallyException, URISyntaxException {
+    public RallyPlugin(String rallyApiKey, String rallyWorkspaceName, String rallyScmName, String scmCommitTemplate, String scmFileTemplate, String buildCaptureRange, String advancedIsDebugOn, String advancedProxyUri) throws RallyException, URISyntaxException {
         RallyConfiguration rally = new RallyConfiguration(rallyApiKey, rallyWorkspaceName, rallyScmName);
-        ScmConfiguration scm = new ScmConfiguration(scmCommitTemplate);
+        ScmConfiguration scm = new ScmConfiguration(scmCommitTemplate, scmFileTemplate);
         BuildConfiguration build = new BuildConfiguration(buildCaptureRange);
         AdvancedConfiguration advanced = new AdvancedConfiguration(advancedProxyUri, advancedIsDebugOn);
 
@@ -150,6 +150,10 @@ public class RallyPlugin extends Builder {
 
     public String getScmCommitTemplate() {
         return this.config.getScm().getCommitTemplate();
+    }
+
+    public String getScmFileTemplate() {
+        return this.config.getScm().getFileTemplate();
     }
 
     public String getBuildCaptureRange() {

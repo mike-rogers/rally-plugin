@@ -1,0 +1,16 @@
+<div>
+    <p>
+        URI that will be linked with every File added to a Rally Changeset's Change.
+    </p>
+
+    <p>
+        If you have a web-accessible repository browser and wish to deeply link into that system with
+        files linked in Rally Changes, use the <kbd>${revision}</kbd> and <kbd>${file}</kbd> variables to do so.
+    </p>
+
+    <p>
+        For example, if you want a file with name <kbd>README.md</kbd> and commit hash <i>12ab34cd56ef</i> to be accessible at
+        <i>http://github.com/your-name/your-project/blob/12ab34cd56ef/README.md</i> then you would set this property as:
+        <kbd>http://github.com/your-name/your-project/blob/${revision}/${file}</kbd>
+    </p>
+</div>

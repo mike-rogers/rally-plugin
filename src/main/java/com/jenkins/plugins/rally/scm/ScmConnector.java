@@ -12,6 +12,8 @@ import java.util.List;
 
 public interface ScmConnector {
     String getRevisionUriFor(String revision);
+    String getFileUriFor(String revision, String filename);
+
     void setScmConfiguration(ScmConfiguration configuration);
     void setBuildConfiguration(BuildConfiguration configuration);
     void setAdvancedConfiguration(AdvancedConfiguration configuration);

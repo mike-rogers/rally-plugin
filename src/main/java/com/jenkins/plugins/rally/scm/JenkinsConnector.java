@@ -134,4 +134,8 @@ public class JenkinsConnector implements ScmConnector {
     public String getRevisionUriFor(String revision) {
         return this.uriResolver.resolveCommitUri(this.config.getCommitTemplate(), revision);
     }
+
+    public String getFileUriFor(String revision, String filename) {
+        return this.uriResolver.resolveFileCommitUri(this.config.getFileTemplate(), revision, filename);
+    }
 }

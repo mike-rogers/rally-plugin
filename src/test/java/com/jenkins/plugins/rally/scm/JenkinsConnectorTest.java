@@ -58,7 +58,7 @@ public class JenkinsConnectorTest {
         when(build.getChangeSet()).thenReturn(changeLogSet);
 
         ScmConnector connector = new JenkinsConnector();
-        connector.setScmConfiguration(new ScmConfiguration(null));
+        connector.setScmConfiguration(new ScmConfiguration(null, null));
         connector.setBuildConfiguration(new BuildConfiguration("SinceLastBuild"));
         connector.setAdvancedConfiguration(new AdvancedConfiguration("http://some.url/", "false"));
 
@@ -95,7 +95,7 @@ public class JenkinsConnectorTest {
         when(build.getChangeSet()).thenReturn(firstChangeLogSet);
 
         ScmConnector connector = new JenkinsConnector();
-        connector.setScmConfiguration(new ScmConfiguration(null));
+        connector.setScmConfiguration(new ScmConfiguration(null, null));
         connector.setBuildConfiguration(new BuildConfiguration("SinceLastSuccessfulBuild"));
         connector.setAdvancedConfiguration(new AdvancedConfiguration("http://some.url/", "false"));
 

@@ -25,6 +25,10 @@
         <f:textbox/>
     </f:entry>
 
+    <f:entry title="File URI" field="scmFileTemplate">
+        <f:textbox/>
+    </f:entry>
+
     <f:entry title="Update changes..." field="buildCaptureChange">
         <select name="buildCaptureRange">
             <j:choose>

@@ -157,7 +157,7 @@ public class RallyConnector implements AlmConnector {
         JsonObject newChange = new JsonObject();
         newChange.addProperty("PathAndFilename", fileName);
         newChange.addProperty("Action", fileType);
-        newChange.addProperty("Uri", this.scmConnector.getRevisionUriFor(revision));
+        newChange.addProperty("Uri", this.scmConnector.getFileUriFor(revision, fileName));
         newChange.addProperty("Changeset", csRef);
         return newChange;
     }
