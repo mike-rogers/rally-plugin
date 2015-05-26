@@ -1,0 +1,14 @@
+name: Jenkins Plugin
+markdown: redcarpet
+highlighter: pygments
+github: https://github.com/mike-rogers/rally-plugin
+
+urls:
+  - text: issues
+    url: https://github.com/mike-rogers/rally-plugin/issues
+  - text: jenkins ci
+    url: https://jenkins-ci.org
+  - text: rally dev
+    url: https://www.rallydev.com
+  - text: twitter
+    url: https://twitter.com/mikerogers_
