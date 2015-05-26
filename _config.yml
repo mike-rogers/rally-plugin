@@ -2,7 +2,7 @@ name: Jenkins Plugin
 markdown: redcarpet
 highlighter: pygments
 github: https://github.com/mike-rogers/rally-plugin
-basepath: https://mike-rogers.github.io/rally-plugin/
+baseurl: /rally-plugin
 
 urls:
   - text: issues
