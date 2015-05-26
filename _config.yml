@@ -5,6 +5,8 @@ github: https://github.com/mike-rogers/rally-plugin
 baseurl: /rally-plugin
 
 urls:
+  - text: github
+    url: https://github.com/mike-rogers/rally-plugin
   - text: issues
     url: https://github.com/mike-rogers/rally-plugin/issues
   - text: jenkins ci

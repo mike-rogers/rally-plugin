@@ -26,7 +26,6 @@
 				<img id="about" src="{{ site.baseurl }}/img/logo.png" height="75px" /><br />	
 
 				<strong>navigation</strong><br />
-				<a href="/">home</a> <br />
 				{% for i in site.urls %}
 					<a class="about" href="{{ i.url }}">{{ i.text }}</a><br />
 				{% endfor %}
