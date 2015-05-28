@@ -60,7 +60,6 @@ public class JenkinsConnectorTest {
         ScmConnector connector = new JenkinsConnector();
         connector.setScmConfiguration(new ScmConfiguration(null, null));
         connector.setBuildConfiguration(new BuildConfiguration("SinceLastBuild"));
-        connector.setAdvancedConfiguration(new AdvancedConfiguration("http://some.url/", "false"));
 
         List<RallyDetailsDTO> detailsList = connector.getChanges(build, null);
 
@@ -97,7 +96,6 @@ public class JenkinsConnectorTest {
         ScmConnector connector = new JenkinsConnector();
         connector.setScmConfiguration(new ScmConfiguration(null, null));
         connector.setBuildConfiguration(new BuildConfiguration("SinceLastSuccessfulBuild"));
-        connector.setAdvancedConfiguration(new AdvancedConfiguration("http://some.url/", "false"));
 
         List<RallyDetailsDTO> detailsList = connector.getChanges(build, null);
 

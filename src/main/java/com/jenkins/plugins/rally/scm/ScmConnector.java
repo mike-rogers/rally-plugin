@@ -16,7 +16,6 @@ public interface ScmConnector {
 
     void setScmConfiguration(ScmConfiguration configuration);
     void setBuildConfiguration(BuildConfiguration configuration);
-    void setAdvancedConfiguration(AdvancedConfiguration configuration);
 
     List<RallyDetailsDTO> getChanges(AbstractBuild build, PrintStream out) throws RallyException;
 }

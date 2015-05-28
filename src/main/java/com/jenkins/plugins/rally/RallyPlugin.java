@@ -57,7 +57,6 @@ public class RallyPlugin extends Builder {
         this.jenkinsConnector = new JenkinsConnector();
         this.jenkinsConnector.setScmConfiguration(this.config.getScm());
         this.jenkinsConnector.setBuildConfiguration(this.config.getBuild());
-        this.jenkinsConnector.setAdvancedConfiguration(this.config.getAdvanced());
     }
 
     @Override

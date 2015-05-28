@@ -23,7 +23,6 @@ public class JenkinsConnector implements ScmConnector {
     private final TemplatedUriResolver uriResolver;
     private ScmConfiguration config;
     private BuildConfiguration buildConfig;
-    private AdvancedConfiguration advancedConfig;
 
     public JenkinsConnector() {
         this.uriResolver = new TemplatedUriResolver();
@@ -35,10 +34,6 @@ public class JenkinsConnector implements ScmConnector {
 
     public void setBuildConfiguration(BuildConfiguration configuration) {
         this.buildConfig = configuration;
-    }
-
-    public void setAdvancedConfiguration(AdvancedConfiguration configuration) {
-        this.advancedConfig = configuration;
     }
 
     public List<RallyDetailsDTO> getChanges(AbstractBuild build, PrintStream out) throws RallyException {
@@ -85,14 +80,12 @@ public class JenkinsConnector implements ScmConnector {
             AbstractBuild build,
             PrintStream out) {
         String message = changeLogEntry.getMsg();
-        Boolean isDebugOn = this.advancedConfig.getIsDebugOn() != null && Boolean.parseBoolean(this.advancedConfig.getIsDebugOn());
         RallyDetailsDTO details = CommitMessageParser.parse(message);
         details.setOrigBuildNumber(changeInformation.getBuildNumber());
         details.setCurrentBuildNumber(String.valueOf(build.number));
         details.setMsg(getMessage(changeLogEntry, details.getOrigBuildNumber(), details.getCurrentBuildNumber()));
         details.setFileNameAndTypes(getFileNameAndTypes(changeLogEntry));
         details.setOut(out);
-        details.setDebugOn(isDebugOn);
         details.setStory(details.getId().startsWith("US"));
         details.setRevision(changeLogEntry.getCommitId());
 
