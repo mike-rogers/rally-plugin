@@ -2,7 +2,7 @@ package com.jenkins.plugins.rally;
 
 import com.jenkins.plugins.rally.config.*;
 import com.jenkins.plugins.rally.connector.AlmConnector;
-import com.jenkins.plugins.rally.connector.RallyConnector;
+import com.jenkins.plugins.rally.service.RallyService;
 import com.jenkins.plugins.rally.connector.RallyDetailsDTO;
 import com.jenkins.plugins.rally.scm.JenkinsConnector;
 import com.jenkins.plugins.rally.scm.ScmConnector;
@@ -122,8 +122,8 @@ public class RallyPlugin extends Builder {
         return shouldBuildSucceed;
     }
 
-    private RallyConnector createRallyConnector() throws RallyException {
-        RallyConnector connector = new RallyConnector();
+    private RallyService createRallyConnector() throws RallyException {
+        RallyService connector = new RallyService();
         connector.setRallyConfiguration(this.config.getRally());
         connector.setRallyApiInstance(this.restApi);
         connector.setScmConnector(this.jenkinsConnector);
