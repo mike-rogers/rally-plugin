@@ -26,6 +26,10 @@ public class RallyConnector {
     }
 
     public void configureProxy(URI uri) throws RallyException {
+        if (uri == null || uri.getHost() == null) {
+            return;
+        }
+
         String userInfo = uri.getUserInfo();
 
         if (userInfo == null) {
@@ -111,6 +115,30 @@ public class RallyConnector {
 
         try {
             response = this.rallyRestApi.create(new CreateRequest("Changeset", newChangeset));
+        } catch (IOException exception) {
+            throw new RallyException(exception);
+        }
+
+        if (!response.wasSuccessful()) {
+            throw new RallyException("Unable to create Changeset object!");
+        }
+
+        return response.getObject().get("_ref").getAsString();
+    }
+
+    public String createChange(String changesetRef, String filename, String action, String uri) throws RallyException {
+        JsonObject newChange = new JsonObject();
+        JsonObject changesetObject = new JsonObject();
+        changesetObject.addProperty("_ref", changesetRef);
+        newChange.add("Changeset", changesetObject);
+        newChange.addProperty("PathAndFilename", filename);
+        newChange.addProperty("Action", action);
+        newChange.addProperty("Uri", uri);
+
+        CreateResponse response;
+
+        try {
+            response = this.rallyRestApi.create(new CreateRequest("Change", newChange));
         } catch (IOException exception) {
             throw new RallyException(exception);
         }

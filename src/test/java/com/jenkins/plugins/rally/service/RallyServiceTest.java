@@ -1,8 +1,8 @@
 package com.jenkins.plugins.rally.service;
 
-import com.jenkins.plugins.rally.RallyException;
+import com.jenkins.plugins.rally.RallyAssetNotFoundException;
 import com.jenkins.plugins.rally.config.AdvancedConfiguration;
-import com.jenkins.plugins.rally.config.RallyConfiguration;
+import com.jenkins.plugins.rally.connector.RallyConnector;
 import com.jenkins.plugins.rally.connector.RallyDetailsDTO;
 import com.jenkins.plugins.rally.scm.ScmConnector;
 import com.rallydev.rest.RallyRestApi;
@@ -25,18 +25,19 @@ public class RallyServiceTest {
     @Mock
     private ScmConnector scmConnector;
 
-    private RallyService connector;
+    @Mock
+    private RallyConnector connector;
+
+    private RallyService service;
 
     @Before
     public void setUp() throws Exception {
-        this.connector = new RallyService();
-        this.connector.setRallyConfiguration(new RallyConfiguration("API_KEY", "WORKSPACE_NAME", "SCM_NAME"));
-        this.connector.setRallyApiInstance(rallyApi);
-        this.connector.setScmConnector(scmConnector);
-        this.connector.setAdvancedConfiguration(new AdvancedConfiguration("http://proxy.url", "false"));
+        this.service = new RallyService(this.connector, new AdvancedConfiguration("http://proxy.url", "false"));
+        this.service.setRallyApiInstance(rallyApi);
+        this.service.setScmConnector(scmConnector);
     }
 
-    @Test(expected=RallyException.class)
+    @Test(expected=RallyAssetNotFoundException.class)
     public void shouldThrowErrorIfAttemptToUpdateWithoutValidStoryRef() throws Exception {
         QueryResponse emptyResponse = new QueryResponse(getEmptyQuery());
         when(this.rallyApi.query(any(QueryRequest.class))).thenReturn(emptyResponse);
@@ -46,7 +47,7 @@ public class RallyServiceTest {
         details.setTaskIndex("1");
         details.setTaskID("12345");
 
-        this.connector.updateRallyTaskDetails(details);
+        this.service.updateRallyTaskDetails(details);
     }
 
     private String getEmptyQuery() {

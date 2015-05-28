@@ -68,6 +68,11 @@ public class RallyConnectorTest {
     }
 
     @Test
+    public void shouldHandleNullUriGracefully() throws Exception {
+        this.connector.configureProxy(new URI(""));
+    }
+
+    @Test
     public void shouldCloseRallyApiConnection() throws Exception {
         this.connector.close();
 
@@ -174,6 +179,31 @@ public class RallyConnectorTest {
         this.connector.createChangeset(null, null, null, null, null, null);
     }
 
+    @Test
+    public void shouldCreateChangeObject() throws Exception {
+        ArgumentCaptor<CreateRequest> createCaptor = ArgumentCaptor.forClass(CreateRequest.class);
+        CreateResponse response = mock(CreateResponse.class);
+        when(response.getObject()).thenReturn(createJsonObjectWithRef("_ref"));
+        when(response.wasSuccessful()).thenReturn(true);
+        when(this.rallyRestApi.create(createCaptor.capture())).thenReturn(response);
+
+        String ref = this.connector.createChange("_ref", "file.txt", "create", "http://scm.org/file.txt");
+
+        JsonElement capturedJson = new JsonParser().parse(createCaptor.getValue().getBody());
+        JsonElement expectedJson = createJsonChangeObject();
+        assertThat(capturedJson, is(equalTo(expectedJson)));
+        assertThat(ref, is(equalTo("_ref")));
+    }
+
+    @Test(expected = RallyException.class)
+    public void shouldThrowExceptionIfCreateChangeOperationNotSuccessful() throws Exception {
+        CreateResponse response = mock(CreateResponse.class);
+        when(response.wasSuccessful()).thenReturn(false);
+        when(this.rallyRestApi.create(any(CreateRequest.class))).thenReturn(response);
+
+        this.connector.createChange(null, null, null, null);
+    }
+
     private JsonObject createJsonObjectWithRef(String ref) {
         JsonObject object = new JsonObject();
         object.addProperty("_ref", ref);
@@ -209,6 +239,24 @@ public class RallyConnectorTest {
         changesetObject.add("Artifacts", artifactArray);
 
         result.add("Changeset", changesetObject);
+
+        return result;
+    }
+
+    private JsonObject createJsonChangeObject() {
+        JsonObject result = new JsonObject();
+
+        JsonObject changeObject = new JsonObject();
+
+        JsonObject changesetObject = new JsonObject();
+        changesetObject.addProperty("_ref", "_ref");
+
+        changeObject.add("Changeset", changesetObject);
+        changeObject.addProperty("PathAndFilename", "file.txt");
+        changeObject.addProperty("Action", "create");
+        changeObject.addProperty("Uri", "http://scm.org/file.txt");
+
+        result.add("Change", changeObject);
 
         return result;
     }
