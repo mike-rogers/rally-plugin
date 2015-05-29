@@ -1,6 +1,7 @@
 package com.jenkins.plugins.rally.service;
 
 import com.google.gson.JsonObject;
+import com.google.inject.Inject;
 import com.jenkins.plugins.rally.RallyAssetNotFoundException;
 import com.jenkins.plugins.rally.RallyException;
 import com.jenkins.plugins.rally.config.AdvancedConfiguration;
@@ -25,18 +26,16 @@ public class RallyService implements AlmConnector {
     private AdvancedConfiguration advancedConfiguration;
     private RallyConnector rallyConnector;
 
-    public RallyService(RallyConnector connector, AdvancedConfiguration configuration) throws RallyException {
+    @Inject
+    public RallyService(RallyConnector connector, ScmConnector scmConnector, AdvancedConfiguration configuration) throws RallyException {
         this.advancedConfiguration = configuration;
+        this.scmConnector = scmConnector;
         this.rallyConnector = connector;
         this.rallyConnector.configureProxy(this.advancedConfiguration.getProxyUri());
     }
 
     public void closeConnection() throws RallyException {
-        try {
-            this.rallyApiInstance.close();
-        } catch (IOException exception) {
-            throw new RallyException(exception);
-        }
+        this.rallyConnector.close();
     }
 
     public void updateChangeset(RallyDetailsDTO details) throws RallyException {
@@ -126,14 +125,6 @@ public class RallyService implements AlmConnector {
         } catch (IOException exception) {
             throw new RallyException(exception);
         }
-    }
-
-    public void setScmConnector(ScmConnector connector) {
-        this.scmConnector = connector;
-    }
-
-    public void setAdvancedConfiguration(AdvancedConfiguration config) throws RallyException {
-        this.advancedConfiguration = config;
     }
 
     public void setRallyApiInstance(RallyRestApi rallyApiInstance) {

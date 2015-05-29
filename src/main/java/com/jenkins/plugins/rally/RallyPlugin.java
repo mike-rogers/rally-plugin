@@ -1,13 +1,14 @@
 package com.jenkins.plugins.rally;
 
+import com.google.inject.AbstractModule;
+import com.google.inject.Guice;
+import com.google.inject.Inject;
+import com.google.inject.Injector;
+import com.google.inject.util.Modules;
 import com.jenkins.plugins.rally.config.*;
-import com.jenkins.plugins.rally.connector.AlmConnector;
-import com.jenkins.plugins.rally.connector.RallyConnector;
-import com.jenkins.plugins.rally.scm.JenkinsConnector;
-import com.jenkins.plugins.rally.service.RallyService;
 import com.jenkins.plugins.rally.connector.RallyDetailsDTO;
 import com.jenkins.plugins.rally.scm.ScmConnector;
-import com.rallydev.rest.RallyRestApi;
+import com.jenkins.plugins.rally.service.RallyService;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
@@ -18,7 +19,6 @@ import hudson.tasks.Builder;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.io.PrintStream;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
 
@@ -27,12 +27,8 @@ import java.util.List;
  * @author R. Michael Rogers
  */
 public class RallyPlugin extends Builder {
-    private static final String RALLY_URL = "https://rally1.rallydev.com";
-    private static final String APPLICATION_NAME = "RallyConnect";
-    private static final String WSAPI_VERSION = "v2.0";
-
     private final RallyPluginConfiguration config;
-    private RallyRestApi restApi;
+    private RallyService rallyService;
     private ScmConnector jenkinsConnector;
 
     @DataBoundConstructor
@@ -46,17 +42,18 @@ public class RallyPlugin extends Builder {
     }
 
     private void initialize() throws RallyException {
-        try {
-            this.restApi = new RallyRestApi(new URI(RALLY_URL), this.config.getRally().getApiKey());
-        } catch (URISyntaxException exception) {
-            throw new RallyException(exception);
-        }
-        this.restApi.setWsapiVersion(WSAPI_VERSION);
-        this.restApi.setApplicationName(APPLICATION_NAME);
+        AbstractModule module = new AbstractModule() {
+            @Override
+            protected void configure() {
+                bind(AdvancedConfiguration.class).toInstance(config.getAdvanced());
+                bind(BuildConfiguration.class).toInstance(config.getBuild());
+                bind(RallyConfiguration.class).toInstance(config.getRally());
+                bind(ScmConfiguration.class).toInstance(config.getScm());
+            }
+        };
 
-        this.jenkinsConnector = new JenkinsConnector();
-        this.jenkinsConnector.setScmConfiguration(this.config.getScm());
-        this.jenkinsConnector.setBuildConfiguration(this.config.getBuild());
+        Injector injector = Guice.createInjector(Modules.override(new RallyGuiceModule()).with(module));
+        injector.injectMembers(this);
     }
 
     @Override
@@ -70,7 +67,6 @@ public class RallyPlugin extends Builder {
         }
 
         boolean shouldBuildSucceed = true;
-        AlmConnector rallyConnector = null;
         PrintStream out = listener.getLogger();
 
         List<RallyDetailsDTO> detailsList;
@@ -81,56 +77,45 @@ public class RallyPlugin extends Builder {
             return false;
         }
 
-        try {
-            rallyConnector = createRallyConnector();
-
-            for (RallyDetailsDTO details : detailsList) {
-                if (!details.getId().isEmpty()) {
-                    try {
-                        rallyConnector.updateChangeset(details);
-                    } catch (Exception e) {
-                        out.println("\trally update plug-in error: could not update changeset entry: " + e.getMessage());
-                        e.printStackTrace(out);
-                        shouldBuildSucceed = false;
-                    }
-
-                    try {
-                        rallyConnector.updateRallyTaskDetails(details);
-                    } catch (Exception e) {
-                        out.println("\trally update plug-in error: could not update TaskDetails entry: " + e.getMessage());
-                        e.printStackTrace(out);
-                        shouldBuildSucceed = false;
-                    }
-                } else {
-                    out.println("Could not update rally due to absence of id in a comment " + details.getMsg());
-                }
-            }
-        } catch(RallyException e) {
-            out.println("Unable to initialize Rally plugin, possibly due to misconfiguration: " + e.getMessage());
-            e.printStackTrace(out);
-            shouldBuildSucceed = false;
-        } finally {
-            if (rallyConnector != null) {
+        for (RallyDetailsDTO details : detailsList) {
+            if (!details.getId().isEmpty()) {
                 try {
-                    rallyConnector.closeConnection();
-                } catch (RallyException exception) {
-                    // Ignore
+                    this.rallyService.updateChangeset(details);
+                } catch (Exception e) {
+                    out.println("\trally update plug-in error: could not update changeset entry: " + e.getMessage());
+                    e.printStackTrace(out);
+                    shouldBuildSucceed = false;
                 }
+
+                try {
+                    this.rallyService.updateRallyTaskDetails(details);
+                } catch (Exception e) {
+                    out.println("\trally update plug-in error: could not update TaskDetails entry: " + e.getMessage());
+                    e.printStackTrace(out);
+                    shouldBuildSucceed = false;
+                }
+            } else {
+                out.println("Could not update rally due to absence of id in a comment " + details.getMsg());
             }
+        }
+
+        try {
+            this.rallyService.closeConnection();
+        } catch (RallyException exception) {
+            // Ignore
         }
 
         return shouldBuildSucceed;
     }
 
-    private RallyService createRallyConnector() throws RallyException {
-        RallyConnector connector = new RallyConnector(this.restApi, this.config.getRally());
+    @Inject
+    public void setRallyService(RallyService service) {
+        this.rallyService = service;
+    }
 
-        RallyService service = new RallyService(connector, this.config.getAdvanced());
-        service.setRallyApiInstance(this.restApi);
-        service.setScmConnector(this.jenkinsConnector);
-        service.setAdvancedConfiguration(this.config.getAdvanced());
-
-        return service;
+    @Inject
+    public void setScmConnector(ScmConnector connector) {
+        this.jenkinsConnector = connector;
     }
 
     public RallyPluginConfiguration getConfig() {

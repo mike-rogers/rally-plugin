@@ -1,8 +1,11 @@
 package com.jenkins.plugins.rally.config;
 
+import com.google.inject.Inject;
+
 public class BuildConfiguration {
     private final ScmChangeCaptureRange captureRange;
 
+    @Inject
     public BuildConfiguration(String captureRange) {
         this.captureRange = ScmChangeCaptureRange.valueOf(captureRange);
     }

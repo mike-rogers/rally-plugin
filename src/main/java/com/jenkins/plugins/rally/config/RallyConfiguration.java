@@ -1,10 +1,13 @@
 package com.jenkins.plugins.rally.config;
 
+import com.google.inject.Inject;
+
 public class RallyConfiguration {
     private final String apiKey;
     private final String workspaceName;
     private final String scmName;
 
+    @Inject
     public RallyConfiguration(String apiKey, String workspaceName, String scmName) {
         this.apiKey = apiKey;
         this.workspaceName = workspaceName;

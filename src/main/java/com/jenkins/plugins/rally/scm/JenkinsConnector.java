@@ -1,7 +1,7 @@
 package com.jenkins.plugins.rally.scm;
 
+import com.google.inject.Inject;
 import com.jenkins.plugins.rally.RallyException;
-import com.jenkins.plugins.rally.config.AdvancedConfiguration;
 import com.jenkins.plugins.rally.config.BuildConfiguration;
 import com.jenkins.plugins.rally.config.ScmConfiguration;
 import com.jenkins.plugins.rally.connector.RallyDetailsDTO;
@@ -24,16 +24,12 @@ public class JenkinsConnector implements ScmConnector {
     private ScmConfiguration config;
     private BuildConfiguration buildConfig;
 
-    public JenkinsConnector() {
+    @Inject
+    public JenkinsConnector(ScmConfiguration scmConfig, BuildConfiguration buildConfig) {
         this.uriResolver = new TemplatedUriResolver();
-    }
 
-    public void setScmConfiguration(ScmConfiguration configuration) {
-        this.config = configuration;
-    }
-
-    public void setBuildConfiguration(BuildConfiguration configuration) {
-        this.buildConfig = configuration;
+        this.config = scmConfig;
+        this.buildConfig = buildConfig;
     }
 
     public List<RallyDetailsDTO> getChanges(AbstractBuild build, PrintStream out) throws RallyException {

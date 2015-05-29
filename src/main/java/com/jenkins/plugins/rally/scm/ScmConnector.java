@@ -14,8 +14,5 @@ public interface ScmConnector {
     String getRevisionUriFor(String revision);
     String getFileUriFor(String revision, String filename);
 
-    void setScmConfiguration(ScmConfiguration configuration);
-    void setBuildConfiguration(BuildConfiguration configuration);
-
     List<RallyDetailsDTO> getChanges(AbstractBuild build, PrintStream out) throws RallyException;
 }

@@ -32,9 +32,8 @@ public class RallyServiceTest {
 
     @Before
     public void setUp() throws Exception {
-        this.service = new RallyService(this.connector, new AdvancedConfiguration("http://proxy.url", "false"));
+        this.service = new RallyService(this.connector, scmConnector, new AdvancedConfiguration("http://proxy.url", "false"));
         this.service.setRallyApiInstance(rallyApi);
-        this.service.setScmConnector(scmConnector);
     }
 
     @Test(expected=RallyAssetNotFoundException.class)

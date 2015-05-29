@@ -1,6 +1,5 @@
 package com.jenkins.plugins.rally.scm;
 
-import com.jenkins.plugins.rally.config.AdvancedConfiguration;
 import com.jenkins.plugins.rally.config.BuildConfiguration;
 import com.jenkins.plugins.rally.config.ScmConfiguration;
 import com.jenkins.plugins.rally.connector.RallyDetailsDTO;
@@ -22,7 +21,7 @@ import static org.mockito.Mockito.when;
 class MyChangeLogSet extends ChangeLogSet {
     List<Entry> detailsList;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "deprecation"})
     protected MyChangeLogSet(AbstractBuild build, List<Entry> detailsList) {
         super(build);
 
@@ -57,9 +56,9 @@ public class JenkinsConnectorTest {
         when(build.getTimestampString2()).thenReturn(timestamp);
         when(build.getChangeSet()).thenReturn(changeLogSet);
 
-        ScmConnector connector = new JenkinsConnector();
-        connector.setScmConfiguration(new ScmConfiguration(null, null));
-        connector.setBuildConfiguration(new BuildConfiguration("SinceLastBuild"));
+        ScmConfiguration scmConfiguration = new ScmConfiguration(null, null);
+        BuildConfiguration buildConfiguration = new BuildConfiguration("SinceLastBuild");
+        ScmConnector connector = new JenkinsConnector(scmConfiguration, buildConfiguration);
 
         List<RallyDetailsDTO> detailsList = connector.getChanges(build, null);
 
@@ -93,9 +92,9 @@ public class JenkinsConnectorTest {
         when(build.getTimestampString2()).thenReturn(timestamp);
         when(build.getChangeSet()).thenReturn(firstChangeLogSet);
 
-        ScmConnector connector = new JenkinsConnector();
-        connector.setScmConfiguration(new ScmConfiguration(null, null));
-        connector.setBuildConfiguration(new BuildConfiguration("SinceLastSuccessfulBuild"));
+        ScmConfiguration scmConfiguration = new ScmConfiguration(null, null);
+        BuildConfiguration buildConfiguration = new BuildConfiguration("SinceLastSuccessfulBuild");
+        ScmConnector connector = new JenkinsConnector(scmConfiguration, buildConfiguration);
 
         List<RallyDetailsDTO> detailsList = connector.getChanges(build, null);
 

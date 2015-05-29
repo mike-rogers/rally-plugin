@@ -2,6 +2,8 @@ package com.jenkins.plugins.rally.connector;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.google.inject.Inject;
+import com.google.inject.name.Named;
 import com.jenkins.plugins.rally.RallyException;
 import com.jenkins.plugins.rally.RallyAssetNotFoundException;
 import com.jenkins.plugins.rally.config.RallyConfiguration;
@@ -15,13 +17,33 @@ import com.rallydev.rest.util.QueryFilter;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 
 public class RallyConnector {
+    public static class FactoryHelper {
+        RallyRestApi createConnection(String uriAsString, String apiKey) throws URISyntaxException {
+            return new RallyRestApi(new URI(uriAsString), apiKey);
+        }
+    }
+
     private final RallyRestApi rallyRestApi;
     private final RallyConfiguration rallyConfiguration;
 
-    public RallyConnector(RallyRestApi rallyRestApi, RallyConfiguration rallyConfiguration) {
-        this.rallyRestApi = rallyRestApi;
+    @Inject
+    public RallyConnector(FactoryHelper factoryHelper,
+                          RallyConfiguration rallyConfiguration,
+                          @Named("SERVER URL") String rallyUrl,
+                          @Named("API VERSION") String apiVersion,
+                          @Named("APP NAME") String appName) throws RallyException {
+        try {
+            this.rallyRestApi = factoryHelper.createConnection(rallyUrl, rallyConfiguration.getApiKey());
+        } catch (URISyntaxException exception) {
+            throw new RallyException(exception);
+        }
+
+        this.rallyRestApi.setApplicationName(appName);
+        this.rallyRestApi.setApplicationVersion(apiVersion);
+
         this.rallyConfiguration = rallyConfiguration;
     }
 

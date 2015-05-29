@@ -37,12 +37,16 @@ public class RallyConnectorTest {
     @Mock
     private RallyRestApi rallyRestApi;
 
+    @Mock
+    private RallyConnector.FactoryHelper factoryHelper;
+
     private RallyConnector connector;
 
     @Before
-    public void setUp() {
+    public void setUp() throws Exception {
+        when(this.factoryHelper.createConnection(anyString(), anyString())).thenReturn(this.rallyRestApi);
         RallyConfiguration rallyConfiguration = new RallyConfiguration("API_KEY", WORKSPACE_NAME, SCM_NAME);
-        this.connector = new RallyConnector(this.rallyRestApi, rallyConfiguration);
+        this.connector = new RallyConnector(factoryHelper, rallyConfiguration, "http://rally", "API VERSION", "APP NAME");
     }
 
     @Test
@@ -51,6 +55,8 @@ public class RallyConnectorTest {
         this.connector.configureProxy(sampleUri);
 
         verify(this.rallyRestApi).setProxy(sampleUri);
+        verify(this.rallyRestApi).setApplicationVersion("API VERSION");
+        verify(this.rallyRestApi).setApplicationName("APP NAME");
     }
 
     @Test
