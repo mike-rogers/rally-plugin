@@ -1,23 +1,20 @@
 package com.jenkins.plugins.rally.connector;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.jenkins.plugins.rally.RallyException;
-import com.jenkins.plugins.rally.RallyAssetNotFoundException;
 import com.jenkins.plugins.rally.config.RallyConfiguration;
+import com.jenkins.plugins.rally.utils.RallyCreateBuilder;
+import com.jenkins.plugins.rally.utils.RallyQueryBuilder;
 import com.rallydev.rest.RallyRestApi;
-import com.rallydev.rest.request.CreateRequest;
-import com.rallydev.rest.request.QueryRequest;
-import com.rallydev.rest.response.CreateResponse;
-import com.rallydev.rest.response.QueryResponse;
-import com.rallydev.rest.util.Fetch;
-import com.rallydev.rest.util.QueryFilter;
 
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+
+import static com.jenkins.plugins.rally.utils.JsonElementBuilder.anObjectWithProperty;
+import static com.jenkins.plugins.rally.utils.JsonElementBuilder.thatReferencesObject;
+
 
 public class RallyConnector {
     public static class FactoryHelper {
@@ -82,93 +79,50 @@ public class RallyConnector {
     }
 
     private String queryForWorkItem(String workItemType, String formattedId) throws RallyException {
-        QueryRequest storyRequest = new QueryRequest(workItemType);
-        storyRequest.setFetch(new Fetch("FormattedID", "Name", "Changesets"));
-        storyRequest.setQueryFilter(new QueryFilter("FormattedID", "=", formattedId));
-        storyRequest.setWorkspace(this.rallyConfiguration.getWorkspaceName());
-        try {
-            QueryResponse storyQueryResponse = this.rallyRestApi.query(storyRequest);
-
-            if (storyQueryResponse.getTotalResultCount() == 0) {
-                throw new RallyAssetNotFoundException();
-            }
-
-            return storyQueryResponse.getResults().get(0).getAsJsonObject().get("_ref").getAsString();
-        } catch (IOException exception) {
-            throw new RallyException(exception);
-        }
+        return RallyQueryBuilder
+                .createQueryFrom(this.rallyRestApi)
+                .ofType(workItemType)
+                .inWorkspace(this.rallyConfiguration.getWorkspaceName())
+                .withFetchValues("FormattedID", "Name", "Changesets")
+                .withQueryFilter("FormattedID", "=", formattedId)
+                .andExecuteReturningRef();
     }
 
     public String queryForRepository() throws RallyException {
-        QueryRequest scmRequest = new QueryRequest("SCMRepository");
-        scmRequest.setFetch(new Fetch("ObjectID","Name","SCMType"));
-        scmRequest.setWorkspace(this.rallyConfiguration.getWorkspaceName());
-        scmRequest.setQueryFilter(new QueryFilter("Name", "=", this.rallyConfiguration.getScmName()));
-        try {
-            QueryResponse scmQueryResponse = this.rallyRestApi.query(scmRequest);
-
-            if (scmQueryResponse.getTotalResultCount() == 0) {
-                throw new RallyAssetNotFoundException();
-            }
-
-            return scmQueryResponse.getResults().get(0).getAsJsonObject().get("_ref").getAsString();
-        } catch (IOException exception) {
-            throw new RallyException(exception);
-        }
+        return RallyQueryBuilder
+                .createQueryFrom(this.rallyRestApi)
+                .ofType("SCMRepository")
+                .inWorkspace(this.rallyConfiguration.getWorkspaceName())
+                .withFetchValues("ObjectID", "Name", "SCMType")
+                .withQueryFilter("Name", "=", this.rallyConfiguration.getScmName())
+                .andExecuteReturningRef();
     }
 
     public String createChangeset(String scmRepositoryRef, String revision, String uri, String commitTimestamp, String message, String artifactRef) throws RallyException{
-        JsonObject newChangeset = new JsonObject();
-        JsonObject scmJsonObject = new JsonObject();
-        scmJsonObject.addProperty("_ref", scmRepositoryRef);
-        newChangeset.add("SCMRepository", scmJsonObject);
-        newChangeset.addProperty("Revision", revision);
-        newChangeset.addProperty("Uri", uri);
-        newChangeset.addProperty("CommitTimestamp", commitTimestamp);
-        newChangeset.addProperty("Message", message);
+        return RallyCreateBuilder
+                .createObjectWith(this.rallyRestApi)
+                .withReference("SCMRepository",
+                        thatReferencesObject()
+                .withPropertyAndValue("_ref", scmRepositoryRef))
+                .andProperty("Revision", revision)
+                .andProperty("Uri", uri)
+                .andProperty("CommitTimestamp", commitTimestamp)
+                .andProperty("Message", message)
+                .andArrayContaining(anObjectWithProperty("_ref", artifactRef)
+                        .withName("Artifacts"))
+                .andExecuteReturningRefFor("Changeset");
 
-        JsonArray artifactsJsonArray = new JsonArray();
-        JsonObject artifactJsonObject = new JsonObject();
-        artifactJsonObject.addProperty("_ref", artifactRef);
-        artifactsJsonArray.add(artifactJsonObject);
-        newChangeset.add("Artifacts", artifactsJsonArray);
-
-        CreateResponse response;
-
-        try {
-            response = this.rallyRestApi.create(new CreateRequest("Changeset", newChangeset));
-        } catch (IOException exception) {
-            throw new RallyException(exception);
-        }
-
-        if (!response.wasSuccessful()) {
-            throw new RallyException("Unable to create Changeset object!");
-        }
-
-        return response.getObject().get("_ref").getAsString();
     }
 
     public String createChange(String changesetRef, String filename, String action, String uri) throws RallyException {
-        JsonObject newChange = new JsonObject();
-        JsonObject changesetObject = new JsonObject();
-        changesetObject.addProperty("_ref", changesetRef);
-        newChange.add("Changeset", changesetObject);
-        newChange.addProperty("PathAndFilename", filename);
-        newChange.addProperty("Action", action);
-        newChange.addProperty("Uri", uri);
-
-        CreateResponse response;
-
-        try {
-            response = this.rallyRestApi.create(new CreateRequest("Change", newChange));
-        } catch (IOException exception) {
-            throw new RallyException(exception);
-        }
-
-        if (!response.wasSuccessful()) {
-            throw new RallyException("Unable to create Changeset object!");
-        }
-
-        return response.getObject().get("_ref").getAsString();
+        return RallyCreateBuilder
+                .createObjectWith(this.rallyRestApi)
+                .withReference("Changeset",
+                        thatReferencesObject()
+                                .withPropertyAndValue("_ref", changesetRef))
+                .andProperty("PathAndFilename", filename)
+                .andProperty("Action", action)
+                .andProperty("Uri", uri)
+                .andExecuteReturningRefFor("Change");
     }
 }
