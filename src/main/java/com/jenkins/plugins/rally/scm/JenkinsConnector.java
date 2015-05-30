@@ -80,7 +80,7 @@ public class JenkinsConnector implements ScmConnector {
         details.setOrigBuildNumber(changeInformation.getBuildNumber());
         details.setCurrentBuildNumber(String.valueOf(build.number));
         details.setMsg(getMessage(changeLogEntry, details.getOrigBuildNumber(), details.getCurrentBuildNumber()));
-        details.setFileNameAndTypes(getFileNameAndTypes(changeLogEntry));
+        details.setFilenamesAndActions(getFileNameAndTypes(changeLogEntry));
         details.setOut(out);
         details.setStory(details.getId().startsWith("US"));
         details.setRevision(changeLogEntry.getCommitId());
@@ -102,16 +102,17 @@ public class JenkinsConnector implements ScmConnector {
         return msg;
     }
 
-    // TODO: rework with Map?
-    private String[][] getFileNameAndTypes(ChangeLogSet.Entry cse) {
-        String [][] fileNames = new String[cse.getAffectedFiles().size()][2];
-        int i = 0;
+    private List<RallyDetailsDTO.FilenameAndAction> getFileNameAndTypes(ChangeLogSet.Entry cse) {
+        List<RallyDetailsDTO.FilenameAndAction> list = new ArrayList<RallyDetailsDTO.FilenameAndAction>();
         for(ChangeLogSet.AffectedFile files : cse.getAffectedFiles()) {
-            fileNames[i][0] = files.getPath();
-            fileNames[i][1] = files.getEditType().getName();
-            i++;
+            RallyDetailsDTO.FilenameAndAction filenameAndAction = new RallyDetailsDTO.FilenameAndAction();
+            filenameAndAction.filename = files.getPath();
+            filenameAndAction.action = files.getEditType();
+
+            list.add(filenameAndAction);
         }
-        return fileNames;
+
+        return list;
     }
 
     private String toTimeZoneTimeStamp(long time) {

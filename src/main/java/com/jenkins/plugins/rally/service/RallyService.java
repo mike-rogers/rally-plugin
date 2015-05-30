@@ -23,15 +23,13 @@ public class RallyService implements AlmConnector {
 
     private RallyRestApi rallyApiInstance;
     private ScmConnector scmConnector;
-    private AdvancedConfiguration advancedConfiguration;
     private RallyConnector rallyConnector;
 
     @Inject
     public RallyService(RallyConnector connector, ScmConnector scmConnector, AdvancedConfiguration configuration) throws RallyException {
-        this.advancedConfiguration = configuration;
         this.scmConnector = scmConnector;
         this.rallyConnector = connector;
-        this.rallyConnector.configureProxy(this.advancedConfiguration.getProxyUri());
+        this.rallyConnector.configureProxy(configuration.getProxyUri());
     }
 
     public void closeConnection() throws RallyException {
@@ -46,9 +44,9 @@ public class RallyService implements AlmConnector {
         String revisionUri = this.scmConnector.getRevisionUriFor(details.getRevision());
         String changesetRef = this.rallyConnector.createChangeset(repositoryRef, details.getRevision(), revisionUri, details.getTimeStamp(), details.getMsg(), artifactRef);
 
-        for (String[] filenameAndAction : details.getFileNameAndTypes()) {
-            String fileName = filenameAndAction[0];
-            String fileType = filenameAndAction[1];
+        for (RallyDetailsDTO.FilenameAndAction filenameAndAction : details.getFilenamesAndActions()) {
+            String fileName = filenameAndAction.filename;
+            String fileType = filenameAndAction.action.getName();
             String revision = details.getRevision();
             String fileUri = this.scmConnector.getFileUriFor(revision, fileName);
 
