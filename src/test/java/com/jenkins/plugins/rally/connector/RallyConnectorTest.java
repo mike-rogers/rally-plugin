@@ -7,11 +7,15 @@ import com.google.gson.JsonParser;
 import com.jenkins.plugins.rally.RallyException;
 import com.jenkins.plugins.rally.RallyAssetNotFoundException;
 import com.jenkins.plugins.rally.config.RallyConfiguration;
+import com.jenkins.plugins.rally.utils.RallyQueryBuilder;
+import com.jenkins.plugins.rally.utils.RallyUpdateBean;
 import com.rallydev.rest.RallyRestApi;
 import com.rallydev.rest.request.CreateRequest;
 import com.rallydev.rest.request.QueryRequest;
+import com.rallydev.rest.request.UpdateRequest;
 import com.rallydev.rest.response.CreateResponse;
 import com.rallydev.rest.response.QueryResponse;
+import com.rallydev.rest.response.UpdateResponse;
 import com.rallydev.rest.util.QueryFilter;
 import org.junit.Before;
 import org.junit.Test;
@@ -210,6 +214,71 @@ public class RallyConnectorTest {
         this.connector.createChange(null, null, null, null);
     }
 
+    @Test
+    public void shouldQueryForTaskById() throws Exception {
+        ArgumentCaptor<QueryRequest> requestCaptor = ArgumentCaptor.forClass(QueryRequest.class);
+        QueryResponse response = mock(QueryResponse.class);
+        when(response.getTotalResultCount()).thenReturn(1);
+        when(response.getResults()).thenReturn(createJsonArrayWithRef("_ref"));
+        when(this.rallyRestApi.query(requestCaptor.capture())).thenReturn(response);
+
+        RallyQueryBuilder.RallyQueryResponseObject responseObject = this.connector.queryForTaskById("storyRef", "TA12345");
+
+        String expectedFilterString = new QueryFilter("WorkProduct", "=", "storyRef").and(new QueryFilter("FormattedID", "=", "TA12345")).toString();
+        assertThat(requestCaptor.getValue().getQueryFilter().toString(), is(equalTo(expectedFilterString)));
+        assertThat(requestCaptor.getValue().getWorkspace(), is(equalTo(WORKSPACE_NAME)));
+        assertThat(responseObject.getRef(), is(equalTo("_ref")));
+    }
+
+    @Test
+    public void shouldQueryForTaskByIndex() throws Exception {
+        ArgumentCaptor<QueryRequest> requestCaptor = ArgumentCaptor.forClass(QueryRequest.class);
+        QueryResponse response = mock(QueryResponse.class);
+        when(response.getTotalResultCount()).thenReturn(1);
+        when(response.getResults()).thenReturn(createJsonArrayWithRef("_ref"));
+        when(this.rallyRestApi.query(requestCaptor.capture())).thenReturn(response);
+
+        RallyQueryBuilder.RallyQueryResponseObject responseObject = this.connector.queryForTaskByIndex("storyRef", 2);
+
+        String expectedFilterString = new QueryFilter("WorkProduct", "=", "storyRef").and(new QueryFilter("TaskIndex", "=", "1")).toString();
+        assertThat(requestCaptor.getValue().getQueryFilter().toString(), is(equalTo(expectedFilterString)));
+        assertThat(requestCaptor.getValue().getWorkspace(), is(equalTo(WORKSPACE_NAME)));
+        assertThat(responseObject.getRef(), is(equalTo("_ref")));
+    }
+
+    @Test
+    public void shouldQueryForTaskByIdWithPropertiesAccess() throws Exception {
+        ArgumentCaptor<QueryRequest> requestCaptor = ArgumentCaptor.forClass(QueryRequest.class);
+        QueryResponse response = mock(QueryResponse.class);
+        when(response.getTotalResultCount()).thenReturn(1);
+        JsonArray arrayWithRef = createJsonArrayWithRef("_ref");
+        arrayWithRef.get(0).getAsJsonObject().addProperty("Attribute", "2.5");
+        when(response.getResults()).thenReturn(arrayWithRef);
+        when(this.rallyRestApi.query(requestCaptor.capture())).thenReturn(response);
+
+        RallyQueryBuilder.RallyQueryResponseObject responseObject = this.connector.queryForTaskById("storyRef", "TA12345");
+
+        assertThat(responseObject.getTaskAttributeAsDouble("Attribute"), is(equalTo(2.5)));
+    }
+
+    @Test
+    public void shouldUpdateTask() throws Exception {
+        ArgumentCaptor<UpdateRequest> requestCaptor = ArgumentCaptor.forClass(UpdateRequest.class);
+        UpdateResponse response = mock(UpdateResponse.class);
+        when(response.wasSuccessful()).thenReturn(true);
+        when(this.rallyRestApi.update(requestCaptor.capture())).thenReturn(response);
+
+        RallyUpdateBean updateInfo = new RallyUpdateBean();
+        updateInfo.setActual("1");
+        updateInfo.setEstimate("1");
+        updateInfo.setTodo("2");
+        this.connector.updateTask("https://rally1.rallydev.com/slm/webservice/v2.0/task/123456", updateInfo);
+
+        JsonElement capturedJson = new JsonParser().parse(requestCaptor.getValue().getBody());
+        JsonElement expectedJson = createJsonUpdateObject();
+        assertThat(capturedJson, is(equalTo(expectedJson)));
+    }
+
     private JsonObject createJsonObjectWithRef(String ref) {
         JsonObject object = new JsonObject();
         object.addProperty("_ref", ref);
@@ -263,6 +332,20 @@ public class RallyConnectorTest {
         changeObject.addProperty("Uri", "http://scm.org/file.txt");
 
         result.add("Change", changeObject);
+
+        return result;
+    }
+
+    private JsonObject createJsonUpdateObject() {
+        JsonObject result = new JsonObject();
+
+        JsonObject taskObject = new JsonObject();
+        taskObject.addProperty("State", "In-Progress");
+        taskObject.addProperty("ToDo", "2");
+        taskObject.addProperty("Actuals", "1");
+        taskObject.addProperty("Estimate", "1");
+
+        result.add("task", taskObject);
 
         return result;
     }

@@ -1,27 +1,16 @@
 package com.jenkins.plugins.rally.service;
 
-import com.google.gson.JsonObject;
 import com.google.inject.Inject;
-import com.jenkins.plugins.rally.RallyAssetNotFoundException;
 import com.jenkins.plugins.rally.RallyException;
 import com.jenkins.plugins.rally.config.AdvancedConfiguration;
 import com.jenkins.plugins.rally.connector.AlmConnector;
 import com.jenkins.plugins.rally.connector.RallyConnector;
 import com.jenkins.plugins.rally.connector.RallyDetailsDTO;
 import com.jenkins.plugins.rally.scm.ScmConnector;
-import com.rallydev.rest.RallyRestApi;
-import com.rallydev.rest.request.QueryRequest;
-import com.rallydev.rest.request.UpdateRequest;
-import com.rallydev.rest.response.QueryResponse;
-import com.rallydev.rest.response.UpdateResponse;
-import com.rallydev.rest.util.Fetch;
-import com.rallydev.rest.util.QueryFilter;
-
-import java.io.IOException;
+import com.jenkins.plugins.rally.utils.RallyQueryBuilder;
+import com.jenkins.plugins.rally.utils.RallyUpdateBean;
 
 public class RallyService implements AlmConnector {
-
-    private RallyRestApi rallyApiInstance;
     private ScmConnector scmConnector;
     private RallyConnector rallyConnector;
 
@@ -55,77 +44,43 @@ public class RallyService implements AlmConnector {
     }
 
     public void updateRallyTaskDetails(RallyDetailsDTO details) throws RallyException {
-        if (!details.isStory() || (details.getTaskIndex().isEmpty() && details.getTaskID().isEmpty())) {
+        if (hasNoTasks(details)) {
             return;
         }
 
         String storyRef = this.rallyConnector.queryForStory(details.getId());
-        JsonObject taskObject = getTaskObjectByStoryRef(details, storyRef);
+        RallyQueryBuilder.RallyQueryResponseObject taskObject = getTaskObjectByStoryRef(details, storyRef);
 
-        JsonObject updateTask = new JsonObject();
-        if(!details.getTaskStatus().isEmpty())
-            updateTask.addProperty("State", details.getTaskStatus());
-        else {
-            updateTask.addProperty("State", "In-Progress");
+        RallyUpdateBean updateInfo = new RallyUpdateBean();
+
+        updateInfo.setState(details.getTaskStatus().isEmpty()
+                ? "In-Progress"
+                : details.getTaskStatus());
+
+        if (!details.getTaskToDO().isEmpty()) {
+            updateInfo.setTodo(details.getTaskToDO());
         }
-        if(!details.getTaskToDO().isEmpty()) {
-            Double todo = Double.parseDouble(details.getTaskToDO());
-            updateTask.addProperty("ToDo", String.valueOf(todo));
-        }
+
         if(!details.getTaskActuals().isEmpty()) {
             Double actuals = Double.parseDouble(details.getTaskActuals());
-            try {
-                actuals = actuals + taskObject.get("Actuals").getAsDouble();
-            } catch(Exception ignored) {}
-            updateTask.addProperty("Actuals", String.valueOf(actuals));
+            actuals = actuals + taskObject.getTaskAttributeAsDouble("Actuals");
+            updateInfo.setActual(Double.toString(actuals));
         }
+
         if(!details.getTaskEstimates().isEmpty()) {
-            Double estimates = Double.parseDouble(details.getTaskEstimates());
-            updateTask.addProperty("Estimate", String.valueOf(estimates));
+            updateInfo.setEstimate(details.getTaskEstimates());
         }
 
-        try {
-            UpdateRequest updateRequest = new UpdateRequest(taskObject.get("_ref").getAsString(), updateTask);
-            UpdateResponse updateResponse = this.rallyApiInstance.update(updateRequest);
-            if (!updateResponse.wasSuccessful()) {
-                throw new RallyException(updateResponse.getErrors());
-            }
-        } catch (IOException exception) {
-            throw new RallyException(exception);
-        }
+        this.rallyConnector.updateTask(taskObject.getRef(), updateInfo);
     }
 
-    private JsonObject getTaskObjectByStoryRef(RallyDetailsDTO details, String storyRef) throws RallyException {
-        JsonObject taskObject;
-        if(!details.getTaskIndex().isEmpty()) {
-            int taskIndex = Integer.parseInt(details.getTaskIndex()) - 1; // index starts with 0 in rally
-            taskObject = getTaskObject(storyRef, "TaskIndex", String.valueOf(taskIndex));
-        } else {
-            taskObject = getTaskObject(storyRef, "FormattedID", details.getTaskID());
-        }
-        return taskObject;
+    private boolean hasNoTasks(RallyDetailsDTO details) {
+        return details.getTaskIndex().isEmpty() && details.getTaskID().isEmpty();
     }
 
-    private JsonObject getTaskObject(String storyRef, String taskQueryAttr, String taskQueryValue) throws RallyException {
-        QueryRequest taskRequest = new QueryRequest("Task");
-        taskRequest.setFetch(new Fetch("FormattedID", "Actuals", "State"));
-        QueryFilter qf = new QueryFilter("WorkProduct", "=", storyRef);
-        qf = qf.and(new QueryFilter(taskQueryAttr, "=", taskQueryValue));
-        taskRequest.setQueryFilter(qf);
-        try {
-            QueryResponse taskQueryResponse = this.rallyApiInstance.query(taskRequest);
-
-            if (taskQueryResponse.getTotalResultCount() == 0) {
-                throw new RallyAssetNotFoundException();
-            }
-
-            return taskQueryResponse.getResults().get(0).getAsJsonObject();
-        } catch (IOException exception) {
-            throw new RallyException(exception);
-        }
-    }
-
-    public void setRallyApiInstance(RallyRestApi rallyApiInstance) {
-        this.rallyApiInstance = rallyApiInstance;
+    private RallyQueryBuilder.RallyQueryResponseObject getTaskObjectByStoryRef(RallyDetailsDTO details, String storyRef) throws RallyException {
+        return details.getTaskIndex().isEmpty()
+                ? this.rallyConnector.queryForTaskById(storyRef, details.getTaskID())
+                : this.rallyConnector.queryForTaskByIndex(storyRef, Integer.parseInt(details.getTaskIndex()));
     }
 }

@@ -6,7 +6,10 @@ import com.jenkins.plugins.rally.RallyException;
 import com.jenkins.plugins.rally.config.RallyConfiguration;
 import com.jenkins.plugins.rally.utils.RallyCreateBuilder;
 import com.jenkins.plugins.rally.utils.RallyQueryBuilder;
+import com.jenkins.plugins.rally.utils.RallyUpdateBean;
 import com.rallydev.rest.RallyRestApi;
+import com.rallydev.rest.request.UpdateRequest;
+import com.rallydev.rest.response.UpdateResponse;
 
 import java.io.IOException;
 import java.net.URI;
@@ -78,6 +81,28 @@ public class RallyConnector {
         return this.queryForWorkItem("Defect", formattedId);
     }
 
+    public RallyQueryBuilder.RallyQueryResponseObject queryForTaskByIndex(String storyRef, Integer index) throws RallyException {
+        return RallyQueryBuilder
+                .createQueryFrom(this.rallyRestApi)
+                .ofType("Task")
+                .inWorkspace(this.rallyConfiguration.getWorkspaceName())
+                .withFetchValues("FormattedID", "Actuals", "State")
+                .withQueryFilter("WorkProduct", "=", storyRef)
+                .andQueryFilter("TaskIndex", "=", Integer.toString(getRallyIndexFor(index)))
+                .andExecuteReturningObject();
+    }
+
+    public RallyQueryBuilder.RallyQueryResponseObject queryForTaskById(String storyRef, String formattedId) throws RallyException {
+        return RallyQueryBuilder
+                .createQueryFrom(this.rallyRestApi)
+                .ofType("Task")
+                .inWorkspace(this.rallyConfiguration.getWorkspaceName())
+                .withFetchValues("FormattedID", "Actuals", "State")
+                .withQueryFilter("WorkProduct", "=", storyRef)
+                .andQueryFilter("FormattedID", "=", formattedId)
+                .andExecuteReturningObject();
+    }
+
     private String queryForWorkItem(String workItemType, String formattedId) throws RallyException {
         return RallyQueryBuilder
                 .createQueryFrom(this.rallyRestApi)
@@ -124,5 +149,23 @@ public class RallyConnector {
                 .andProperty("Action", action)
                 .andProperty("Uri", uri)
                 .andExecuteReturningRefFor("Change");
+    }
+
+    public void updateTask(String taskRef, RallyUpdateBean updateInfo) throws RallyException {
+        UpdateRequest request = new UpdateRequest(taskRef, updateInfo.getJsonObject());
+        try {
+            UpdateResponse response = this.rallyRestApi.update(request);
+
+            if (!response.wasSuccessful()) {
+                throw new RallyException(response.getErrors());
+            }
+
+        } catch (IOException exception) {
+            throw new RallyException(exception);
+        }
+    }
+
+    private int getRallyIndexFor(Integer index) {
+        return index - 1;
     }
 }
