@@ -1,8 +1,10 @@
 package com.jenkins.plugins.rally.service;
 
 import com.google.inject.Inject;
+import com.jenkins.plugins.rally.RallyAssetNotFoundException;
 import com.jenkins.plugins.rally.RallyException;
 import com.jenkins.plugins.rally.config.AdvancedConfiguration;
+import com.jenkins.plugins.rally.config.RallyConfiguration;
 import com.jenkins.plugins.rally.connector.AlmConnector;
 import com.jenkins.plugins.rally.connector.RallyConnector;
 import com.jenkins.plugins.rally.connector.RallyDetailsDTO;
@@ -13,12 +15,14 @@ import com.jenkins.plugins.rally.utils.RallyUpdateBean;
 public class RallyService implements AlmConnector {
     private ScmConnector scmConnector;
     private RallyConnector rallyConnector;
+    private RallyConfiguration rallyConfiguration;
 
     @Inject
-    public RallyService(RallyConnector connector, ScmConnector scmConnector, AdvancedConfiguration configuration) throws RallyException {
+    public RallyService(RallyConnector connector, ScmConnector scmConnector, AdvancedConfiguration configuration, RallyConfiguration rallyConfiguration) throws RallyException {
         this.scmConnector = scmConnector;
         this.rallyConnector = connector;
         this.rallyConnector.configureProxy(configuration.getProxyUri());
+        this.rallyConfiguration = rallyConfiguration;
     }
 
     public void closeConnection() throws RallyException {
@@ -26,7 +30,18 @@ public class RallyService implements AlmConnector {
     }
 
     public void updateChangeset(RallyDetailsDTO details) throws RallyException {
-        String repositoryRef = this.rallyConnector.queryForRepository();
+        String repositoryRef;
+
+        try {
+            repositoryRef = this.rallyConnector.queryForRepository();
+        } catch (RallyAssetNotFoundException exception) {
+            if (this.rallyConfiguration.shouldCreateIfAbsent()) {
+                repositoryRef = this.rallyConnector.createRepository();
+            } else {
+                throw exception;
+            }
+        }
+
         String artifactRef = details.isStory()
                 ? this.rallyConnector.queryForStory(details.getId())
                 : this.rallyConnector.queryForDefect(details.getId());

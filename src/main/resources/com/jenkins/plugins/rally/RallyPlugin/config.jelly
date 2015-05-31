@@ -17,8 +17,13 @@
     <f:entry title="Rally Workspace Name" field="rallyWorkspaceName">
         <f:textbox/>
     </f:entry>
+
     <f:entry title="Rally Repository Name" field="rallyScmName">
         <f:textbox/>
+    </f:entry>
+
+    <f:entry title="Create Repository if it doesn't already exist?" field="shouldCreateIfAbsent">
+        <f:checkbox value="${it.shouldCreateIfAbsent}"/>
     </f:entry>
 
     <f:entry title="Commit URI" field="scmCommitTemplate">
@@ -53,6 +58,7 @@
     <f:entry title="Turn on debug level?" field="advancedIsDebugOn">
         <f:checkbox value="${it.isDebugOn}"/>
     </f:entry>
+
     <f:entry title="Proxy URI" field="advancedProxyUri">
         <f:textbox/>
     </f:entry>

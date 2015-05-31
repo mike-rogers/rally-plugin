@@ -21,14 +21,14 @@ import static com.jenkins.plugins.rally.utils.JsonElementBuilder.thatReferencesO
 
 public class RallyConnector {
     public static class FactoryHelper {
+
         RallyRestApi createConnection(String uriAsString, String apiKey) throws URISyntaxException {
             return new RallyRestApi(new URI(uriAsString), apiKey);
         }
     }
-
     private final RallyRestApi rallyRestApi;
-    private final RallyConfiguration rallyConfiguration;
 
+    private final RallyConfiguration rallyConfiguration;
     @Inject
     public RallyConnector(FactoryHelper factoryHelper,
                           RallyConfiguration rallyConfiguration,
@@ -163,6 +163,22 @@ public class RallyConnector {
         } catch (IOException exception) {
             throw new RallyException(exception);
         }
+    }
+
+    public String createRepository() throws RallyException {
+        String workspaceRef = RallyQueryBuilder
+                .createQueryFrom(this.rallyRestApi)
+                .ofType("Workspace")
+                .withFetchValues("Name")
+                .withQueryFilter("Name", "=", this.rallyConfiguration.getWorkspaceName())
+                .andExecuteReturningRef();
+
+        return RallyCreateBuilder
+                .createObjectWith(this.rallyRestApi)
+                .andProperty("Name", this.rallyConfiguration.getScmName())
+                .andProperty("Workspace", workspaceRef)
+                .andProperty("SCMType", "Jenkins-Created")
+                .andExecuteReturningRefFor("SCMRepository");
     }
 
     private int getRallyIndexFor(Integer index) {

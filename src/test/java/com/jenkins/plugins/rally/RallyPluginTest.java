@@ -21,6 +21,7 @@ public class RallyPluginTest {
         String[] keysToTest = {
                 "rallyWorkspaceName",
                 "rallyScmName",
+                "shouldCreateIfAbsent",
                 "scmCommitTemplate",
                 "scmFileTemplate",
                 "buildCaptureRange",
@@ -29,7 +30,7 @@ public class RallyPluginTest {
         };
 
         FreeStyleProject p = jenkins.getInstance().createProject(FreeStyleProject.class, "testProject");
-        RallyPlugin before = new RallyPlugin(API_KEY, WORKSPACE_NAME, SCM_NAME, COMMIT_URI_STRING, FILE_URI_STRING, "SinceLastBuild", "true", "http://proxy.url");
+        RallyPlugin before = new RallyPlugin(API_KEY, WORKSPACE_NAME, SCM_NAME, "true", COMMIT_URI_STRING, FILE_URI_STRING, "SinceLastBuild", "true", "http://proxy.url");
         p.getBuildersList().add(before);
 
         jenkins.submit(jenkins.createWebClient().getPage(p,"configure").getFormByName("config"));
@@ -44,6 +45,7 @@ public class RallyPluginTest {
         String[] keysToTest = {
                 "rallyWorkspaceName",
                 "rallyScmName",
+                "shouldCreateIfAbsent",
                 "scmCommitTemplate",
                 "scmFileTemplate",
                 "buildCaptureRange",
@@ -52,7 +54,7 @@ public class RallyPluginTest {
         };
 
         FreeStyleProject p = jenkins.getInstance().createProject(FreeStyleProject.class, "testProject");
-        RallyPlugin before = new RallyPlugin(API_KEY, WORKSPACE_NAME, SCM_NAME, COMMIT_URI_STRING, FILE_URI_STRING, "SinceLastSuccessfulBuild", "true", "http://proxy.url");
+        RallyPlugin before = new RallyPlugin(API_KEY, WORKSPACE_NAME, SCM_NAME, "false", COMMIT_URI_STRING, FILE_URI_STRING, "SinceLastSuccessfulBuild", "true", "http://proxy.url");
         p.getBuildersList().add(before);
 
         jenkins.submit(jenkins.createWebClient().getPage(p,"configure").getFormByName("config"));

@@ -1,7 +1,9 @@
 package com.jenkins.plugins.rally.service;
 
 import com.jenkins.plugins.rally.RallyAssetNotFoundException;
+import com.jenkins.plugins.rally.RallyException;
 import com.jenkins.plugins.rally.config.AdvancedConfiguration;
+import com.jenkins.plugins.rally.config.RallyConfiguration;
 import com.jenkins.plugins.rally.connector.RallyConnector;
 import com.jenkins.plugins.rally.connector.RallyDetailsDTO;
 import com.jenkins.plugins.rally.scm.ScmConnector;
@@ -11,7 +13,9 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import static org.mockito.Mockito.when;
+import java.util.ArrayList;
+
+import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
 public class RallyServiceTest {
@@ -22,11 +26,14 @@ public class RallyServiceTest {
     @Mock
     private RallyConnector connector;
 
+    @Mock
+    private RallyConfiguration rallyConfiguration;
+
     private RallyService service;
 
     @Before
     public void setUp() throws Exception {
-        this.service = new RallyService(this.connector, scmConnector, new AdvancedConfiguration("http://proxy.url", "false"));
+        this.service = new RallyService(this.connector, scmConnector, new AdvancedConfiguration("http://proxy.url", "false"), this.rallyConfiguration);
     }
 
     @Test(expected=RallyAssetNotFoundException.class)
@@ -39,5 +46,29 @@ public class RallyServiceTest {
         details.setId("US12345");
 
         this.service.updateRallyTaskDetails(details);
+    }
+
+    @Test
+    public void shouldBeConfigurableToCreateNonExistentRepository() throws RallyException {
+        when(this.connector.queryForRepository()).thenThrow(new RallyAssetNotFoundException());
+        when(this.rallyConfiguration.shouldCreateIfAbsent()).thenReturn(true);
+
+        RallyDetailsDTO details = new RallyDetailsDTO();
+        details.setFilenamesAndActions(new ArrayList<RallyDetailsDTO.FilenameAndAction>());
+        this.service.updateChangeset(details);
+
+        verify(this.connector).createRepository();
+    }
+
+    @Test(expected = RallyAssetNotFoundException.class)
+    public void shouldBeConfigurableToNotCreateNonExistentRepository() throws RallyException {
+        when(this.connector.queryForRepository()).thenThrow(new RallyAssetNotFoundException());
+        when(this.rallyConfiguration.shouldCreateIfAbsent()).thenReturn(false);
+
+        RallyDetailsDTO details = new RallyDetailsDTO();
+        details.setFilenamesAndActions(new ArrayList<RallyDetailsDTO.FilenameAndAction>());
+        this.service.updateChangeset(details);
+
+        verify(this.connector, never()).createRepository();
     }
 }

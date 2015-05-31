@@ -4,8 +4,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.jenkins.plugins.rally.RallyException;
 import com.jenkins.plugins.rally.RallyAssetNotFoundException;
+import com.jenkins.plugins.rally.RallyException;
 import com.jenkins.plugins.rally.config.RallyConfiguration;
 import com.jenkins.plugins.rally.utils.RallyQueryBuilder;
 import com.jenkins.plugins.rally.utils.RallyUpdateBean;
@@ -31,8 +31,6 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.*;
 
-
-
 @RunWith(MockitoJUnitRunner.class)
 public class RallyConnectorTest {
     private static final String WORKSPACE_NAME = "WORKSPACE_NAME";
@@ -49,7 +47,7 @@ public class RallyConnectorTest {
     @Before
     public void setUp() throws Exception {
         when(this.factoryHelper.createConnection(anyString(), anyString())).thenReturn(this.rallyRestApi);
-        RallyConfiguration rallyConfiguration = new RallyConfiguration("API_KEY", WORKSPACE_NAME, SCM_NAME);
+        RallyConfiguration rallyConfiguration = new RallyConfiguration("API_KEY", WORKSPACE_NAME, SCM_NAME, "false");
         this.connector = new RallyConnector(factoryHelper, rallyConfiguration, "http://rally", "API VERSION", "APP NAME");
     }
 
@@ -279,6 +277,39 @@ public class RallyConnectorTest {
         assertThat(capturedJson, is(equalTo(expectedJson)));
     }
 
+    @Test
+    public void shouldCreateRepositoryObject() throws Exception {
+        ArgumentCaptor<CreateRequest> createCaptor = ArgumentCaptor.forClass(CreateRequest.class);
+
+        CreateResponse response = mock(CreateResponse.class);
+        when(response.getObject()).thenReturn(createJsonObjectWithRef("_ref"));
+        when(response.wasSuccessful()).thenReturn(true);
+
+        QueryResponse queryResponse = mock(QueryResponse.class);
+        when(queryResponse.getTotalResultCount()).thenReturn(1);
+        JsonArray arrayWithRef = createJsonArrayWithRef("_ref");
+        when(queryResponse.getResults()).thenReturn(arrayWithRef);
+
+        when(this.rallyRestApi.create(createCaptor.capture())).thenReturn(response);
+        when(this.rallyRestApi.query(any(QueryRequest.class))).thenReturn(queryResponse);
+
+        String ref = this.connector.createRepository();
+
+        JsonElement capturedJson = new JsonParser().parse(createCaptor.getValue().getBody());
+        JsonElement expectedJson = createJsonRepositoryObject();
+        assertThat(capturedJson, is(equalTo(expectedJson)));
+        assertThat(ref, is(equalTo("_ref")));
+    }
+
+    @Test(expected = RallyAssetNotFoundException.class)
+    public void shouldThrowExceptionIfWorkspaceNotFound() throws Exception {
+        QueryResponse queryResponse = mock(QueryResponse.class);
+        when(queryResponse.getTotalResultCount()).thenReturn(0);
+        when(this.rallyRestApi.query(any(QueryRequest.class))).thenReturn(queryResponse);
+
+        this.connector.createRepository();
+    }
+
     private JsonObject createJsonObjectWithRef(String ref) {
         JsonObject object = new JsonObject();
         object.addProperty("_ref", ref);
@@ -291,6 +322,19 @@ public class RallyConnectorTest {
         object.addProperty("_ref", ref);
         array.add(object);
         return array;
+    }
+
+    private JsonObject createJsonRepositoryObject() {
+        JsonObject result = new JsonObject();
+
+        JsonObject repositoryObject = new JsonObject();
+        repositoryObject.addProperty("Name", SCM_NAME);
+        repositoryObject.addProperty("Workspace", "_ref");
+        repositoryObject.addProperty("SCMType", "Jenkins-Created");
+
+        result.add("SCMRepository", repositoryObject);
+
+        return result;
     }
 
     private JsonObject createJsonChangesetObject() {
